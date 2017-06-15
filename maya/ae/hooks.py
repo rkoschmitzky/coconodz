@@ -1,26 +1,61 @@
 import pymel.core as pmc
 import maya.OpenMayaUI as omui
 
+from Qt import QtCore, QtWidgets
 
-class BaseTemplate(pmc.ui.AETemplate):
-
-    def addControl(self, control, label=None, **kwargs):
-        pmc.ui.AETemplate.addControl(self, control, label=label, **kwargs)
-
-    def beginLayout(self, name, collapse=True):
-        pmc.ui.AETemplate.beginLayout(self, name, collapse=collapse)
+try:
+	from shiboken import wrapInstance
+except:
+	from shiboken2 import wrapInstance
 
 
-class AEHook(BaseTemplate):
+class AEHook(pmc.ui.AETemplate):
+    """ AETemplateCustomContent
+
+    This adds our custom stuff to the AETemplate and can be used to hook
+    different nodetype templates. It stores custom ui elements as qt widgets
+    and let us modify them when needed.
+    """
     def __init__(self, nodeName):
-        BaseTemplate.__init__(self, nodeName)
-        self.thisNode = None
-        self.node = pmc.PyNode(self.nodeName)
-        self.buildBody(nodeName)
+        super(AEHook, self).__init__(nodeName)
 
-    def buildBody(self, nodeName):
-        node = pmc.PyNode(nodeName)
-        if node.type() == "shadingEngine":
-            self.thisNode = pmc.PyNode(nodeName)
-            self.beginLayout("CoconodZ", collapse=1)
-            self.endLayout()
+        self.node = pmc.PyNode(nodeName)
+        self.nodegraph_button = None
+        self.layout_title = "CocoNodZ"
+        self.nodegraph_button_title = "Open Nodegraph"
+
+        # hooking shading engines
+        self.hook_shading_engine()
+
+    def _add_layout(self):
+        """ predefine layout and content
+
+        """
+        self.beginLayout(self.layout_title, collapse=False)
+        self.beginScrollLayout()
+        self.callCustom(self.initialize_nodegraph_button, self.update_nodegraph_button, self.layout_title)
+        self.endScrollLayout()
+        self.endLayout()
+
+    def initialize_nodegraph_button(self, attr):
+        """ adds our custom widgets
+
+        """
+        pmc.setUITemplate('attributeEditorTemplate', pushTemplate=True)
+
+        pmc.cmds.columnLayout(adj=True)
+        maya_button = pmc.button("test", label=self.nodegraph_button_title)
+        ptr = omui.MQtUtil.findControl(maya_button)
+        self.button = wrapInstance(long(ptr), QtWidgets.QPushButton)
+
+        pmc.setUITemplate('attributeEditorTemplate', popTemplate=True)
+
+    def update_nodegraph_button(self, attr):
+        pass
+
+    def hook_shading_engine(self):
+        """ checks if layout belongs to shadingEngine and adds our layout
+
+        """
+        if self.node and self.node.type() == "shadingEngine":
+            self._add_layout()
