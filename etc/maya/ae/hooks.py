@@ -3,11 +3,7 @@ import maya.OpenMayaUI as omui
 
 from Qt import QtCore, QtWidgets
 
-try:
-	from shiboken import wrapInstance
-except:
-	from shiboken2 import wrapInstance
-
+from coconodz.etc.maya.qtutilities import wrapinstance
 
 class AEHook(pmc.ui.AETemplate):
     """ AETemplateCustomContent
@@ -21,7 +17,7 @@ class AEHook(pmc.ui.AETemplate):
 
         self.node = pmc.PyNode(nodeName)
         self.nodegraph_button = None
-        self.layout_title = "CocoNodZ"
+        self.layout_title = "CocoNodz"
         self.nodegraph_button_title = "Open Nodegraph"
 
         # hooking shading engines
@@ -44,9 +40,9 @@ class AEHook(pmc.ui.AETemplate):
         pmc.setUITemplate('attributeEditorTemplate', pushTemplate=True)
 
         pmc.cmds.columnLayout(adj=True)
-        maya_button = pmc.button("test", label=self.nodegraph_button_title)
+        maya_button = pmc.button("nodegraph_eval", label=self.nodegraph_button_title)
         ptr = omui.MQtUtil.findControl(maya_button)
-        self.button = wrapInstance(long(ptr), QtWidgets.QPushButton)
+        self.button = wrapinstance(long(ptr), QtWidgets.QPushButton)
 
         pmc.setUITemplate('attributeEditorTemplate', popTemplate=True)
 
