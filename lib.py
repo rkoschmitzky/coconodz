@@ -2,6 +2,7 @@ from collections import namedtuple
 import json
 import logging
 import os
+import pprint
 
 _LOG = logging.getLogger(name="CocoNodz.nodegraph")
 
@@ -30,45 +31,66 @@ class ConfiguationMixin(object):
     BASE_CONFIG_NAME = "nodegraph.config"
 
     def __init__(self):
+        super(ConfiguationMixin, self).__init__()
         self.__base_configuation_file = os.path.join(os.path.abspath("."), self.BASE_CONFIG_NAME)
-        self.__data = {}
+        self.__data = None
 
         # initialize data
         self.restore_configuration()
 
     @property
-    def data(self):
+    def configuration(self):
         return self.__data
 
-    @data.setter
-    def data(self, value):
-        assert isinstance(value, dict), "Expected type dict. Got {0}".format(type(value))
-        self.__data = _namedtuplify(value, "configuration")
+    @configuration.setter
+    def configuration(self, value):
+        assert isinstance(value, DictDotLookup), "Expected type DictDotLookup. Got {0}".format(type(value))
+        self.__data = value
 
     def load_configuration(self, configuration_file):
         _LOG.warning("Loading base configuration from {0}".format(configuration_file))
         data = read_json(configuration_file)
-        self.data = data
+        self.configuration = DictDotLookup(data)
 
     def restore_configuration(self):
         self.load_configuration(self.__base_configuation_file)
 
+    def save_configuration(self, filepath):
+        _dir = os.path.dirname(filepath)
+        assert os.path.exists(_dir), "Directory {0} doesn't exist.".format(_dir)
 
-def _namedtuplify(mapping, name='NT'):
-    """ Convert mappings to namedtuples recursively. """
-
-    if isinstance(mapping, dict):
-        for key, value in list(mapping.items()):
-            mapping[key] = _namedtuplify(value)
-        return _namedtuple_wrapper(name, **mapping)
-    elif isinstance(mapping, list):
-        return [_namedtuplify(item) for item in mapping]
-    return mapping
+        write_json(filepath, self.configuration)
 
 
-def _namedtuple_wrapper(name, **kwargs):
-    wrap = namedtuple(name, kwargs)
-    return wrap(**kwargs)
+class DictDotLookup(object):
+    """ Creates objects that behave much like a dictionaries, but allow nested
+    key access using object dot lookups.
+
+    """
+    def __init__(self, d):
+        for k in d:
+            if isinstance(d[k], dict):
+                self.__dict__[k] = DictDotLookup(d[k])
+            elif isinstance(d[k], (list, tuple)):
+                l = []
+                for v in d[k]:
+                    if isinstance(v, dict):
+                        l.append(DictDotLookup(v))
+                    else:
+                        l.append(v)
+                self.__dict__[k] = l
+            else:
+                self.__dict__[k] = d[k]
+
+    def __getitem__(self, name):
+        if name in self.__dict__:
+            return self.__dict__[name]
+
+    def __iter__(self):
+        return iter(self.__dict__.keys())
+
+    def __repr__(self):
+        return pprint.pformat(self.__dict__)
 
 
 def write_json(filepath, data):
