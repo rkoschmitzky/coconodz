@@ -1,8 +1,7 @@
 import pymel.core as pmc
 
-
 def add_template_custom_content(nodeName):
-    from coconodz.etc.maya.ae.hooks import AEHook
+    from ..ae import AEHook
 
     AEHook(nodeName)
 
