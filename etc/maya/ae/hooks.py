@@ -3,7 +3,7 @@ import maya.OpenMayaUI as omui
 
 from Qt import QtCore, QtWidgets
 
-from coconodz.etc.maya.qtutilities import wrapinstance
+from etc.maya.qtutilities import wrapinstance
 
 class AEHook(pmc.ui.AETemplate):
     """ AETemplateCustomContent

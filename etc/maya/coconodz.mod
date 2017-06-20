@@ -1,3 +1,3 @@
 + coconodz any .
-PYTHONPATH +:= ../../..
-MAYA_SCRIPTS_PATH +: scripts
+MAYA_SCRIPTS_PATH +:= scripts
+COCONODZ_STARTUP +:= scripts

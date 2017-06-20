@@ -1,4 +1,3 @@
-from collections import namedtuple
 import json
 import logging
 import os
