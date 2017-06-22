@@ -8,8 +8,6 @@ PACKAGE_NAME = "coconodz"
 VAR_NAME = "{0}_STARTUP".format(PACKAGE_NAME.upper())
 
 _LOG = logging.getLogger("Coconodz.Startup")
-_LOG.addHandler(logging.StreamHandler())
-_LOG.setLevel(logging.INFO)
 
 # adding python paths
 if VAR_NAME in os.environ:

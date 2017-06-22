@@ -3,6 +3,11 @@ import logging
 import os
 import pprint
 
+from Qt import (QtWidgets,
+                QtCore
+               )
+
+
 _LOG = logging.getLogger(name="CocoNodz.nodegraph")
 
 
@@ -25,17 +30,43 @@ class SafeOpen(object):
             self.f.close()
 
 
+class BaseWindow(QtWidgets.QMainWindow):
+
+    TITLE = "CocoNodz Nodegraph"
+
+    def __init__(self, parent):
+        super(BaseWindow, self).__init__(parent)
+        self.__parent = parent
+
+        self._setup_ui()
+
+    @property
+    def central_widget(self):
+        return self._central_widget
+
+    @property
+    def central_layout(self):
+        return self._central_layout
+
+    def _setup_ui(self):
+        self._central_widget = QtWidgets.QWidget(self.__parent)
+        self._central_layout = QtWidgets.QVBoxLayout()
+        self.setWindowTitle(self.TITLE)
+        self.setCentralWidget(self.central_widget)
+        if not os.name == 'nt':
+            self.setWindowFlags(QtCore.Qt.Tool)
+
+        self.central_widget.setLayout(self.central_layout)
+
+
 class ConfiguationMixin(object):
 
     BASE_CONFIG_NAME = "nodegraph.config"
 
-    def __init__(self):
-        super(ConfiguationMixin, self).__init__()
-        self.__base_configuation_file = os.path.join(os.path.abspath("."), self.BASE_CONFIG_NAME)
+    def __init__(self, *args, **kwargs):
+        super(ConfiguationMixin, self).__init__(*args)
+        self.__base_configuation_file = os.path.join(os.path.dirname(__file__), self.BASE_CONFIG_NAME)
         self.__data = None
-
-        # initialize data
-        self.restore_configuration()
 
     @property
     def configuration(self):
@@ -46,19 +77,23 @@ class ConfiguationMixin(object):
         assert isinstance(value, DictDotLookup), "Expected type DictDotLookup. Got {0}".format(type(value))
         self.__data = value
 
+    @property
+    def configuration_data(self):
+        return self.configuration.__dict__
+
     def load_configuration(self, configuration_file):
         _LOG.warning("Loading base configuration from {0}".format(configuration_file))
         data = read_json(configuration_file)
         self.configuration = DictDotLookup(data)
 
-    def restore_configuration(self):
+    def initialize_configuration(self):
         self.load_configuration(self.__base_configuation_file)
 
     def save_configuration(self, filepath):
         _dir = os.path.dirname(filepath)
         assert os.path.exists(_dir), "Directory {0} doesn't exist.".format(_dir)
 
-        write_json(filepath, self.configuration)
+        write_json(filepath, self.configuration_data)
 
 
 class DictDotLookup(object):

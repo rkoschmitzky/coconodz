@@ -12,8 +12,8 @@ _ERROR_MSG = "Looks like you want to run CocoNodz in a unknown environment." + \
             "Please email the author {0} : {1}".format(__author__, __email__)
 
 _LOG = logging.getLogger(name="CocoNodz")
-_LOG.addHandler(logging.StreamHandler())
-_LOG.setLevel(logging.DEBUG)
+#_LOG.addHandler(logging.StreamHandler())
+#_LOG.setLevel(logging.DEBUG)
 
 def _import_expected(module_name):
     """ checks if an import of a specified module is possible
