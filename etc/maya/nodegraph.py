@@ -8,5 +8,3 @@ class Nodzgraph(Nodegraph):
 
     def __init__(self, parent=maya_main_window()):
         super(Nodzgraph, self).__init__(parent)
-
-        pass

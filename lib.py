@@ -1,3 +1,4 @@
+import ast
 import json
 import logging
 import os
@@ -79,7 +80,7 @@ class ConfiguationMixin(object):
 
     @property
     def configuration_data(self):
-        return self.configuration.__dict__
+        return self.configuration.get_original()
 
     def load_configuration(self, configuration_file):
         _LOG.warning("Loading base configuration from {0}".format(configuration_file))
@@ -102,6 +103,7 @@ class DictDotLookup(object):
 
     """
     def __init__(self, d):
+        self.__original_data = d
         for k in d:
             if isinstance(d[k], dict):
                 self.__dict__[k] = DictDotLookup(d[k])
@@ -125,6 +127,9 @@ class DictDotLookup(object):
 
     def __repr__(self):
         return pprint.pformat(self.__dict__)
+
+    def get_original(self):
+        return self.__original_data
 
 
 def write_json(filepath, data):
