@@ -2,12 +2,10 @@ import logging
 import os
 import sys
 
-import pymel.core as pmc
-
 PACKAGE_NAME = "coconodz"
 VAR_NAME = "{0}_STARTUP".format(PACKAGE_NAME.upper())
 
-_LOG = logging.getLogger("Coconodz.startup.Maya")
+_LOG = logging.getLogger("Coconodz.startup.Katana")
 
 # adding python paths
 if VAR_NAME in os.environ:
@@ -16,15 +14,4 @@ if VAR_NAME in os.environ:
     sys.path.append(os.path.join(COCONODZ_PARENT, PACKAGE_NAME))
     sys.path.append(os.path.join(COCONODZ_PARENT, PACKAGE_NAME, "site-packages"))
 
-from etc.maya.ae.hooks import AEHook
-
-_LOG.info("Launching startup Script")
-
-
-def add_template_custom_content(nodeName):
-    AEHook(nodeName)
-
-
-pmc.callbacks(addCallback=add_template_custom_content,
-              hook='AETemplateCustomContent',
-              owner="coconodz")
+from etc.katana.nodegraph import Nodzgraph

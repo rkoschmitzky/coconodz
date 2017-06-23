@@ -6,7 +6,6 @@ from Qt import (QtWidgets,
                 QtGui
                 )
 
-
 from lib import (ConfiguationMixin,
                  BaseWindow
                  )
