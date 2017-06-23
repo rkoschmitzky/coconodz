@@ -6,10 +6,9 @@ from Qt import (QtWidgets,
                 QtGui
                 )
 
-from lib import (ConfiguationMixin,
-                 BaseWindow
+from lib import (BaseWindow,
+                 ConfiguationMixin
                  )
-
 import nodz_main
 
 class Basegraph(object):
@@ -101,6 +100,11 @@ class Nodegraph(Basegraph):
     def window(self):
         return self._window
 
+    @window.setter
+    def window(self, window):
+        self._window = window
+        self.window.central_layout.addWidget(self.graph)
+
     @property
     def graph(self):
         return self._graph
@@ -109,8 +113,8 @@ class Nodegraph(Basegraph):
     def configuration(self):
         return self.graph.configuration
 
-    def open(self):
-        self.window.show()
+    def open(self, *args, **kwargs):
+        self.window.show(*args, **kwargs)
 
     def save_configuration(self, filepath):
         self.graph.save_configuration(filepath)
