@@ -7,9 +7,11 @@ from Qt import (QtWidgets,
                 )
 
 from lib import (BaseWindow,
+                 SearchField,
                  ConfiguationMixin
                  )
 import nodz_main
+
 
 class Basegraph(object):
 
@@ -82,35 +84,73 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
 
 class Nodegraph(Basegraph):
+    """ main Nodegraph that should be accessable without any host application
 
+    """
     def __init__(self, parent=None):
         super(Nodegraph, self).__init__(parent)
 
+        # this can be overriden in subclasses to allow mixing in other classes
+        # that are not host agnoistic
         self._window = BaseWindow(parent)
 
         # create the graphingscene
         self._graph = Nodz(self._window)
-
         self._graph.initialize()
+
+        # create the search field widget
+        self._search_field = SearchField(self._graph)
 
         # add the graph to our window
         self.window.central_layout.addWidget(self._graph)
 
     @property
     def window(self):
+        """ holds the Window which serves as parent to all other widgets
+
+        Returns:
+
+        """
         return self._window
 
     @window.setter
     def window(self, window):
+        """ holds the Window which serves as parent to all other widgets
+
+        Args:
+            window:
+
+        Returns:
+
+        """
         self._window = window
         self.window.central_layout.addWidget(self.graph)
 
     @property
     def graph(self):
+        """ holds the nodegraph widget
+
+        Returns: Nodz
+
+        """
         return self._graph
 
     @property
+    def search_field(self):
+        """ holds the search field widget
+
+        Returns: SearchField
+
+        """
+        return self._search_field
+
+    @property
     def configuration(self):
+        """ holds the configuration
+
+        Returns: ConfigurationMixin
+
+        """
         return self.graph.configuration
 
     def open(self, *args, **kwargs):

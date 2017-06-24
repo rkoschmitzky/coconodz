@@ -10,11 +10,24 @@ import maya.OpenMayaUI as omui
 
 
 def wrapinstance(*args, **kwargs):
+    """ shiboken and shiboken2 compatible wrapInstance function
+
+    Args:
+        *args:
+        **kwargs:
+
+    Returns:
+
+    """
     return wrapInstance(*args, **kwargs)
 
 
 def maya_main_window():
-    """ Return the QMainWindow for the Maya main Window """
+    """ gets Mayas Main Window
+
+    Returns: QMainWindow
+
+    """
 
     ptr = omui.MQtUtil.mainWindow()
     if not ptr:
@@ -24,8 +37,11 @@ def maya_main_window():
 
 
 def maya_menu_bar():
-    """ Maya menubar for """
+    """ gets Mayas Main Menu Bar
 
+    Returns: QMenuBar
+
+    """
     for child in maya_main_window().children():
         if isinstance(child, QtWidgets.QMenuBar):
             return child
