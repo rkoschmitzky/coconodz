@@ -82,6 +82,32 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         # directly in the nodz_main scope
         nodz_main.config = self.configuration_data
 
+        self._search_field = SearchField(self)
+
+    @property
+    def search_field(self):
+        """ holds the search field widget
+
+        Returns: SearchField
+
+        """
+        return self._search_field
+
+    def keyPressEvent(self, event):
+        """ extending the keyPressEvent
+
+        Args:
+            event:
+
+        Returns:
+
+        """
+        super(Nodz, self).keyPressEvent(event)
+
+        # show SearchField widget on Tab press
+        if event.key() == QtCore.Qt.Key_Tab:
+            self.search_field.open()
+
 
 class Nodegraph(Basegraph):
     """ main Nodegraph that should be accessable without any host application
@@ -96,13 +122,10 @@ class Nodegraph(Basegraph):
 
         # create the graphingscene
         self._graph = Nodz(self._window)
-        self._graph.initialize()
-
-        # create the search field widget
-        self._search_field = SearchField(self._graph)
+        self.graph.initialize()
 
         # add the graph to our window
-        self.window.central_layout.addWidget(self._graph)
+        self.window.central_layout.addWidget(self.graph)
 
     @property
     def window(self):
@@ -118,7 +141,7 @@ class Nodegraph(Basegraph):
         """ holds the Window which serves as parent to all other widgets
 
         Args:
-            window:
+            window: QMainWindow
 
         Returns:
 
@@ -134,15 +157,6 @@ class Nodegraph(Basegraph):
 
         """
         return self._graph
-
-    @property
-    def search_field(self):
-        """ holds the search field widget
-
-        Returns: SearchField
-
-        """
-        return self._search_field
 
     @property
     def configuration(self):

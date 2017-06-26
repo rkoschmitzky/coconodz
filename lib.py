@@ -143,7 +143,7 @@ class SearchField(QtWidgets.QMenu):
 
         self.search_field.returnPressed.connect(self.on_accept)
 
-    def show(self):
+    def open(self):
         """ shows SearchField Widget at current cursor position
 
         Returns:
