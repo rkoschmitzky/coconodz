@@ -167,6 +167,10 @@ class Nodegraph(Basegraph):
         """
         return self.graph.configuration
 
+    @property
+    def search_field(self):
+        return self.graph.search_field
+
     def open(self, *args, **kwargs):
         self.window.show(*args, **kwargs)
 
