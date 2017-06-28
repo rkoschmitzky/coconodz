@@ -110,7 +110,12 @@ class SearchField(QtWidgets.QMenu):
 
         """
         self._items = item_names_list
-        self._setup_completer(self.search_field)
+        self._setup_completer(self._mask)
+
+    @property
+    def mask(self):
+        return self._mask
+
 
     def _setup_completer(self, line_edit_widget):
         """ creates a QCompleter and sets it to the given widget
@@ -133,15 +138,15 @@ class SearchField(QtWidgets.QMenu):
 
         """
         # set search field
-        self.search_field = QtWidgets.QLineEdit(self)
+        self._mask = QtWidgets.QLineEdit(self)
         action = QtWidgets.QWidgetAction(self)
-        action.setDefaultWidget(self.search_field)
+        action.setDefaultWidget(self._mask)
         self.addAction(action)
-        self.search_field.setFocus()
+        self._mask.setFocus()
 
-        self._setup_completer(self.search_field)
+        self._setup_completer(self._mask)
 
-        self.search_field.returnPressed.connect(self.on_accept)
+        self._mask.returnPressed.connect(self.on_accept)
 
     def open(self):
         """ shows SearchField Widget at current cursor position
@@ -159,9 +164,10 @@ class SearchField(QtWidgets.QMenu):
         Returns:
 
         """
-        search_input = str(self.search_field.text())
+        search_input = str(self._mask.text())
         if search_input in self.available_items:
             self.signal_input_accepted.emit(search_input)
+            self.close()
 
 
 class ConfiguationMixin(object):

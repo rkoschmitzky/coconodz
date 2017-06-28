@@ -51,20 +51,11 @@ class Basegraph(object):
     def save_configuration(self, filepath):
         raise NotImplementedError
 
-    def clear(self):
+    def update(self):
         raise NotImplementedError
 
-
-class NodeScene(nodz_main.NodeScene):
-    """ This class will let us override or extend behaviour
-    for the purpose of better customization
-
-    """
-
-    def __init__(self, parent):
-        super(NodeScene, self).__init__(parent)
-
-        pass
+    def clear(self):
+        raise NotImplementedError
 
 
 class Nodz(ConfiguationMixin, nodz_main.Nodz):
@@ -72,6 +63,8 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     for the purpose of better customization
 
     """
+
+    signal_host_node_created = QtCore.Signal(object, str)
 
     def __init__(self, parent):
         super(Nodz, self).__init__(parent)
@@ -113,6 +106,7 @@ class Nodegraph(Basegraph):
     """ main Nodegraph that should be accessable without any host application
 
     """
+
     def __init__(self, parent=None):
         super(Nodegraph, self).__init__(parent)
 
@@ -126,6 +120,12 @@ class Nodegraph(Basegraph):
 
         # add the graph to our window
         self.window.central_layout.addWidget(self.graph)
+
+        # set slots
+        self.connect_slots()
+
+        # just testing
+        self.search_field.available_items = ["lambert"]
 
     @property
     def window(self):
@@ -172,13 +172,79 @@ class Nodegraph(Basegraph):
         return self.graph.search_field
 
     def open(self, *args, **kwargs):
+        """ opens the Nodegraph
+
+        Args:
+            *args:
+            **kwargs:
+
+        Returns:
+
+        """
         self.window.show(*args, **kwargs)
 
     def save_configuration(self, filepath):
+        """ saves the current configuration in json schema
+
+        Args:
+            filepath: path to file
+
+        Returns:
+
+        """
         self.graph.save_configuration(filepath)
 
     def load_configuration(self, configuration_file):
+        """
+
+        Args:
+            configuration_file:
+
+        Returns:
+
+        """
         self.graph.load_configuration(configuration_file)
+        # @todo update functionality
 
     def clear(self):
         self.graph.clearGraph()
+
+    @QtCore.Slot(object)
+    def on_input_accepted(self, node_type):
+        """ creates a NodeItem of given type and emit additional signals
+
+        This will always emit a host_node_created signal, which behaves like
+        some kind of callback, but makes it easier for us to modify and
+        reuse them.
+        Args:
+            node_type: type of the node
+
+        Returns:
+
+        """
+        # @todo implement node presets correctly
+        node = self.graph.createNode()
+        self.graph.signal_host_node_created.emit(node, node_type)
+
+    def connect_slots(self):
+        """ setup all slots
+
+        Returns:
+
+        """
+        self.search_field.signal_input_accepted.connect(self.on_input_accepted)
+        self.graph.signal_host_node_created.connect(self.on_host_node_created)
+
+    @QtCore.Slot(object)
+    def on_host_node_created(self, node, node_type):
+        """ allows us to modify the NodeItem when a corresponding host node was created
+
+        Args:
+            node: NodeItem
+            node_type: original node type of equally host node object
+
+        Returns:
+
+        """
+        # we will store the original node type
+        setattr(node, "node_type", node_type)

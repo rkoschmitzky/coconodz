@@ -1,5 +1,6 @@
 import pymel.core as pmc
 from Qt import (QtWidgets,
+                QtGui,
                 QtCore
                 )
 
@@ -32,9 +33,6 @@ class Nodzgraph(Nodegraph):
         # add shaders to search field widget
         self.search_field.available_items = pmc.listNodeTypes("shader")
 
-        # register slots
-        self._setup_slots()
-
     def open(self):
         """ opens the Nodegraph with dockable configuration settings
 
@@ -46,24 +44,9 @@ class Nodzgraph(Nodegraph):
                                     self.configuration.maya.floating
                                     )
 
-    @QtCore.Slot(object)
-    def create_node(self, node_type):
-        """ creates shading node in Maya and in graph
+    def on_host_node_created(self, node, node_type):
 
-        Args:
-            node_type: type of the node
+        host_node = pmc.createNode(node_type)
+        self.graph.editNode(node, newName=host_node.name())
 
-        Returns:
-
-        """
-        node = pmc.createNode(node_type)
-        self.graph.createNode(name=node.name(), preset='node_preset_1')
-
-    def _setup_slots(self):
-        """ connects the available slots
-
-        Returns:
-
-        """
-        self.search_field.signal_input_accepted.connect(self.create_node)
-
+        super(Nodzgraph, self).on_host_node_created(node, node_type)
