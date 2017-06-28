@@ -124,9 +124,6 @@ class Nodegraph(Basegraph):
         # set slots
         self.connect_slots()
 
-        # just testing
-        self.search_field.available_items = ["lambert"]
-
     @property
     def window(self):
         """ holds the Window which serves as parent to all other widgets
@@ -222,8 +219,13 @@ class Nodegraph(Basegraph):
         Returns:
 
         """
-        # @todo implement node presets correctly
-        node = self.graph.createNode()
+        # find out if there is a configuration for this node type
+        _ = "node_{0}".format(node_type)
+        if hasattr(self.graph.configuration, _):
+            # and create node with included preset
+            node = self.graph.createNode(preset=_)
+        else:
+            node = self.graph.createNode()
         self.graph.signal_host_node_created.emit(node, node_type)
 
     def connect_slots(self):

@@ -22,7 +22,9 @@ class MayaBaseWindow(MayaQWidgetDockableMixin, BaseWindow):
 
 
 class Nodzgraph(Nodegraph):
+    """ Maya Nodegraph widget implementation
 
+    """
     def __init__(self, parent=maya_main_window()):
         super(Nodzgraph, self).__init__(parent)
 
@@ -45,7 +47,18 @@ class Nodzgraph(Nodegraph):
                                     )
 
     def on_host_node_created(self, node, node_type):
+        """ slot override
 
+        This adds a maya node of the given node type and renames the
+        corresponding nodegraph node
+
+        Args:
+            node: NodeItem
+            node_type: maya node type
+
+        Returns:
+
+        """
         host_node = pmc.createNode(node_type)
         self.graph.editNode(node, newName=host_node.name())
 
