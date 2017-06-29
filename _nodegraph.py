@@ -18,6 +18,26 @@ class Basegraph(object):
     def __init__(self, *args, **kwargs):
         super(Basegraph, self).__init__()
 
+        # we have to add the nodes here on node creation
+        # and delete them here on node deletion
+        self._all_nodes = []
+
+    @property
+    def all_nodes(self):
+        return self._all_nodes
+
+    @property
+    def all_node_names(self):
+        return [_.name for _ in self._all_nodes]
+
+    @property
+    def selected_nodes(self):
+        return [_ for _ in self._all_nodes if _.isSelected()]
+
+    @property
+    def selected_node_names(self):
+        return [_.name for _ in self.selected_nodes]
+
     def reset_configuration(self):
         raise NotImplementedError
 
@@ -76,6 +96,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         nodz_main.config = self.configuration_data
 
         self._search_field = SearchField(self)
+        self._creation_field = SearchField(self)
 
     @property
     def search_field(self):
@@ -86,8 +107,19 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         """
         return self._search_field
 
+    @property
+    def creation_field(self):
+        """ holds the creation field widgets
+
+        Returns:
+
+        """
+
+        return self._creation_field
+
+
     def keyPressEvent(self, event):
-        """ extending the keyPressEvent
+        """ overriding the keyPressEvent method
 
         Args:
             event:
@@ -95,10 +127,29 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         Returns:
 
         """
-        super(Nodz, self).keyPressEvent(event)
 
+        if event.key() not in self.pressedKeys:
+            self.pressedKeys.append(event.key())
+
+        if event.key() == QtCore.Qt.Key_Delete:
+            self._deleteSelectedNodes()
+
+        if (event.key() == QtCore.Qt.Key_F and
+            event.modifiers() == QtCore.Qt.NoModifier):
+            self._focus()
+
+        if (event.key() == QtCore.Qt.Key_S and
+            event.modifiers() == QtCore.Qt.NoModifier):
+            self._nodeSnap = True
+
+        # Emit signal.
+        self.signal_KeyPressed.emit(event.key())
         # show SearchField widget on Tab press
         if event.key() == QtCore.Qt.Key_Tab:
+            self.creation_field.open()
+
+        if (event.key() == QtCore.Qt.Key_F and
+            event.modifiers() == QtCore.Qt.ControlModifier):
             self.search_field.open()
 
 
@@ -109,9 +160,8 @@ class Nodegraph(Basegraph):
 
     def __init__(self, parent=None):
         super(Nodegraph, self).__init__(parent)
-
         # this can be overriden in subclasses to allow mixing in other classes
-        # that are not host agnoistic
+        # that are not host agnostic
         self._window = BaseWindow(parent)
 
         # create the graphingscene
@@ -123,6 +173,9 @@ class Nodegraph(Basegraph):
 
         # set slots
         self.connect_slots()
+
+        # just testing
+        self.creation_field.available_items = ["test"]
 
     @property
     def window(self):
@@ -168,6 +221,10 @@ class Nodegraph(Basegraph):
     def search_field(self):
         return self.graph.search_field
 
+    @property
+    def creation_field(self):
+        return self.graph.creation_field
+
     def open(self, *args, **kwargs):
         """ opens the Nodegraph
 
@@ -207,7 +264,7 @@ class Nodegraph(Basegraph):
         self.graph.clearGraph()
 
     @QtCore.Slot(object)
-    def on_input_accepted(self, node_type):
+    def on_creation_input_accepted(self, node_type):
         """ creates a NodeItem of given type and emit additional signals
 
         This will always emit a host_node_created signal, which behaves like
@@ -228,13 +285,19 @@ class Nodegraph(Basegraph):
             node = self.graph.createNode()
         self.graph.signal_host_node_created.emit(node, node_type)
 
+    @QtCore.Slot(object)
+    def on_search_input_accepted(self, node_name):
+        # @todo add functionality that selects and focus node
+        pass
+
     def connect_slots(self):
         """ setup all slots
 
         Returns:
 
         """
-        self.search_field.signal_input_accepted.connect(self.on_input_accepted)
+        self.creation_field.signal_input_accepted.connect(self.on_creation_input_accepted)
+        self.search_field.signal_opened.connect(self.on_search_field_opened)
         self.graph.signal_host_node_created.connect(self.on_host_node_created)
 
     @QtCore.Slot(object)
@@ -250,3 +313,12 @@ class Nodegraph(Basegraph):
         """
         # we will store the original node type
         setattr(node, "node_type", node_type)
+        self._all_nodes.append(node)
+
+    @QtCore.Slot(object)
+    def on_host_node_delted(self, node_name):
+        self._all_nodes.remove(node_name)
+
+    @QtCore.Slot(object)
+    def on_search_field_opened(self):
+        self.search_field.available_items = self.all_node_names

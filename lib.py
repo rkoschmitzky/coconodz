@@ -80,6 +80,7 @@ class BaseWindow(QtWidgets.QMainWindow):
 class BaseField(QtWidgets.QMenu):
 
     signal_available_items_changed = QtCore.Signal()
+    signal_opened = QtCore.Signal()
 
     def __init__(self, parent):
         super(BaseField, self).__init__(parent)
@@ -109,6 +110,7 @@ class BaseField(QtWidgets.QMenu):
         Returns:
 
         """
+        self.signal_opened.emit()
         pos = QtGui.QCursor.pos()
         self.move(pos.x(), pos.y())
         self.exec_()

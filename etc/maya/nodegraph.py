@@ -33,7 +33,7 @@ class Nodzgraph(Nodegraph):
             self.window = MayaBaseWindow(parent)
 
         # add shaders to search field widget
-        self.search_field.available_items = pmc.listNodeTypes("shader")
+        self.creation_field.available_items = pmc.listNodeTypes("shader")
 
     def open(self):
         """ opens the Nodegraph with dockable configuration settings
