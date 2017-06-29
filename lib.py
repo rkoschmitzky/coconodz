@@ -1,4 +1,3 @@
-import ast
 import json
 import logging
 import os
@@ -78,7 +77,63 @@ class BaseWindow(QtWidgets.QMainWindow):
         self.central_widget.setLayout(self.central_layout)
 
 
-class SearchField(QtWidgets.QMenu):
+class BaseField(QtWidgets.QMenu):
+
+    signal_available_items_changed = QtCore.Signal()
+
+    def __init__(self, parent):
+        super(BaseField, self).__init__(parent)
+
+        self._items = None
+
+    @property
+    def available_items(self):
+        return self._items
+
+    @available_items.setter
+    def available_items(self, items_dict):
+        self._items = items_dict
+        self.signal_available_items_changed.emit()
+
+    def setup_ui(self):
+        """ connect overall signals
+
+        Returns:
+
+        """
+        self.signal_available_items_changed.connect(self.on_available_items_changed)
+
+    def open(self):
+        """ opens widget on cursor position
+
+        Returns:
+
+        """
+        pos = QtGui.QCursor.pos()
+        self.move(pos.x(), pos.y())
+        self.exec_()
+
+
+class AttributesField(BaseField):
+    """ simple tree view widget we will use to display node attributes in nodegraph
+
+    """
+
+    signal_input_accepted = QtCore.Signal(str)
+
+    def __init__(self, parent):
+        super(AttributesField, self).__init__(parent)
+
+        self._items = {}
+
+    def _setup_tree_widget(self):
+        pass
+
+    def on_mask_accept(self):
+        pass
+
+
+class SearchField(BaseField):
     """ simple SearchField Widget we will use in the nodegraph
 
     """
@@ -88,34 +143,7 @@ class SearchField(QtWidgets.QMenu):
         super(SearchField, self).__init__(parent)
 
         self._items = []
-        self._setup_ui()
-
-    @property
-    def available_items(self):
-        """ defined items that are available for the completer
-
-        Returns: list of item names
-
-        """
-        return self._items
-
-    @available_items.setter
-    def available_items(self, item_names_list):
-        """
-
-        Args:
-            item_names_list:
-
-        Returns:
-
-        """
-        self._items = item_names_list
-        self._setup_completer(self._mask)
-
-    @property
-    def mask(self):
-        return self._mask
-
+        self.setup_ui()
 
     def _setup_completer(self, line_edit_widget):
         """ creates a QCompleter and sets it to the given widget
@@ -126,37 +154,34 @@ class SearchField(QtWidgets.QMenu):
         Returns:
 
         """
-        self._completer = QtWidgets.QCompleter(self.available_items)
-        self._completer.setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
-        self._completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
-        line_edit_widget.setCompleter(self._completer)
+        self.completer = QtWidgets.QCompleter(self.available_items)
+        self.completer.setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+        self.completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        line_edit_widget.setCompleter(self.completer)
 
-    def _setup_ui(self):
-        """ creates all widgets and actions and connects signals
+    def setup_ui(self):
+        """ extends the setup ui method
 
-        Returns:
-
+        This should create the base widgets and connect signals
         """
+        super(SearchField, self).setup_ui()
         # set search field
-        self._mask = QtWidgets.QLineEdit(self)
-        action = QtWidgets.QWidgetAction(self)
-        action.setDefaultWidget(self._mask)
-        self.addAction(action)
-        self._mask.setFocus()
+        self.mask = QtWidgets.QLineEdit(self)
+        self.action = QtWidgets.QWidgetAction(self)
+        self.action.setDefaultWidget(self.mask)
+        self.addAction(self.action)
+        self.mask.setFocus()
 
-        self._setup_completer(self._mask)
+        self.mask.returnPressed.connect(self.on_accept)
 
-        self._mask.returnPressed.connect(self.on_accept)
-
-    def open(self):
-        """ shows SearchField Widget at current cursor position
+    @QtCore.Slot()
+    def on_available_items_changed(self):
+        """ actions that should run if items have changed
 
         Returns:
 
         """
-        pos = QtGui.QCursor.pos()
-        self.move(pos.x(), pos.y())
-        self.exec_()
+        self._setup_completer(self.mask)
 
     def on_accept(self):
         """ sends signal if input is one of the available items
@@ -164,7 +189,7 @@ class SearchField(QtWidgets.QMenu):
         Returns:
 
         """
-        search_input = str(self._mask.text())
+        search_input = str(self.mask.text())
         if search_input in self.available_items:
             self.signal_input_accepted.emit(search_input)
             self.close()
