@@ -91,6 +91,8 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     """
 
     signal_host_node_created = QtCore.Signal(object, str)
+    signal_node_plug_created = QtCore.Signal(object)
+    signal_node_socket_created = QtCore.Signal(object)
 
     def __init__(self, parent):
         super(Nodz, self).__init__(parent)
@@ -282,6 +284,9 @@ class Nodegraph(Basegraph):
         self.search_field.signal_input_accepted.connect(self.on_search_input_accepted)
         self.search_field.signal_opened.connect(self.on_search_field_opened)
         self.graph.signal_host_node_created.connect(self.on_host_node_created)
+        self.graph.signal_AttrCreated.connect(self.on_attribute_created)
+        self.graph.signal_node_socket_created.connect(self.on_socket_created)
+        self.graph.signal_node_plug_created.connect(self.on_plug_created)
 
     @QtCore.Slot(object)
     def on_creation_input_accepted(self, node_type):
@@ -333,6 +338,9 @@ class Nodegraph(Basegraph):
         # we will store the original node type
         setattr(node, "node_type", node_type)
 
+        # create default plug on node
+        self.graph.createAttribute(node, socket=False, name="message", dataType="message", index=0)
+
     @QtCore.Slot(object)
     def on_host_node_deleted(self, node_name):
         pass
@@ -340,3 +348,32 @@ class Nodegraph(Basegraph):
     @QtCore.Slot(object)
     def on_search_field_opened(self):
         self.search_field.available_items = self.all_node_names
+
+    @QtCore.Slot(str, int)
+    def on_attribute_created(self, node_name, index):
+        node = self.nodes_dict[node_name]
+        if node.sockets:
+            sockets = [socket for socket in node.sockets if node.sockets[socket].index == index]
+            if sockets and len(sockets) != 1:
+                raise ValueError("Could not find socket to emit signal on creation")
+            else:
+                socket = sockets[0]
+                if socket:
+                    self.graph.signal_node_socket_created.emit(socket)
+        if node.plugs:
+            plugs = [plug for plug in node.plugs if node.plugs[plug].index == index]
+            if plugs and len(plugs) != 1:
+                raise ValueError("Could not find plug to emit signal on creation")
+            else:
+                plug = plugs[0]
+                if plug:
+                    self.graph.signal_node_plug_created.emit(plug)
+
+
+    @QtCore.Slot(object)
+    def on_socket_created(self):
+        print "WOHOO SOCKET CREATED"
+
+    @QtCore.Slot(object)
+    def on_plug_created(self):
+        print "WOHOO PLUG Created"

@@ -123,16 +123,31 @@ class AttributesField(BaseField):
 
     signal_input_accepted = QtCore.Signal(str)
 
-    def __init__(self, parent):
+    def __init__(self, parent, attribute_mode=""):
         super(AttributesField, self).__init__(parent)
 
+        self._attribute_mode = attribute_mode
         self._items = {}
+        self.setup_ui()
 
-    def _setup_tree_widget(self):
-        pass
+    def _setup_tree(self):
+        self.tree = QtWidgets.QTreeWidget(self)
+        self.tree.setColumnCount(1)
+        self.tree.setHeaderLabels(["Attribute".format(self._attribute_mode)])
 
-    def on_mask_accept(self):
-        pass
+    def setup_ui(self):
+        super(AttributesField, self).setup_ui()
+        self._setup_tree()
+        self.mask = QtWidgets.QLineEdit()
+        self.central_widget = QtWidgets.QWidget(self)
+        self.central_layout = QtWidgets.QVBoxLayout(self.central_widget)
+        self.central_layout.addWidget(self.mask)
+        self.central_layout.addWidget(self.tree)
+
+        self.action = QtWidgets.QWidgetAction(self)
+        self.action.setDefaultWidget(self.central_widget)
+        self.addAction(self.action)
+        self.mask.setFocus()
 
 
 class SearchField(BaseField):
