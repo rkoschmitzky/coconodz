@@ -18,25 +18,27 @@ class Basegraph(object):
     def __init__(self, *args, **kwargs):
         super(Basegraph, self).__init__()
 
-        # we have to add the nodes here on node creation
-        # and delete them here on node deletion
-        self._all_nodes = []
+        self._all_nodes = {}
 
+    # the current Nodz implementation stores the
+    # node as tuple, which is not really clear to us
+    # why. lets handle node querying bettter by providing
+    # some useful properties
     @property
     def all_nodes(self):
-        return self._all_nodes
+        return self._all_nodes.items()
 
     @property
     def all_node_names(self):
-        return [_.name for _ in self._all_nodes]
+        return self._all_nodes.keys()
 
     @property
     def selected_nodes(self):
-        return [_ for _ in self._all_nodes if _.isSelected()]
+        return [_[-1] for _ in self.all_nodes if _[-1].isSelected()]
 
     @property
     def selected_node_names(self):
-        return [_.name for _ in self.selected_nodes]
+        return [_.name for _ in self.selected_nodes if _.isSelected()]
 
     def reset_configuration(self):
         raise NotImplementedError
@@ -117,7 +119,6 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         return self._creation_field
 
-
     def keyPressEvent(self, event):
         """ overriding the keyPressEvent method
 
@@ -142,8 +143,6 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
             event.modifiers() == QtCore.Qt.NoModifier):
             self._nodeSnap = True
 
-        # Emit signal.
-        self.signal_KeyPressed.emit(event.key())
         # show SearchField widget on Tab press
         if event.key() == QtCore.Qt.Key_Tab:
             self.creation_field.open()
@@ -152,6 +151,8 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
             event.modifiers() == QtCore.Qt.ControlModifier):
             self.search_field.open()
 
+        # Emit signal.
+        self.signal_KeyPressed.emit(event.key())
 
 class Nodegraph(Basegraph):
     """ main Nodegraph that should be accessable without any host application
@@ -167,6 +168,9 @@ class Nodegraph(Basegraph):
         # create the graphingscene
         self._graph = Nodz(self._window)
         self.graph.initialize()
+
+        # to query nodes our own way
+        self._all_nodes = self.graph.scene().nodes
 
         # add the graph to our window
         self.window.central_layout.addWidget(self.graph)
@@ -261,7 +265,18 @@ class Nodegraph(Basegraph):
         # @todo update functionality
 
     def clear(self):
+        # @todo it shall clear the craph without emitting node deleted signals
         self.graph.clearGraph()
+
+    def connect_slots(self):
+        """ setup all slots
+
+        Returns:
+
+        """
+        self.creation_field.signal_input_accepted.connect(self.on_creation_input_accepted)
+        self.search_field.signal_opened.connect(self.on_search_field_opened)
+        self.graph.signal_host_node_created.connect(self.on_host_node_created)
 
     @QtCore.Slot(object)
     def on_creation_input_accepted(self, node_type):
@@ -290,16 +305,6 @@ class Nodegraph(Basegraph):
         # @todo add functionality that selects and focus node
         pass
 
-    def connect_slots(self):
-        """ setup all slots
-
-        Returns:
-
-        """
-        self.creation_field.signal_input_accepted.connect(self.on_creation_input_accepted)
-        self.search_field.signal_opened.connect(self.on_search_field_opened)
-        self.graph.signal_host_node_created.connect(self.on_host_node_created)
-
     @QtCore.Slot(object)
     def on_host_node_created(self, node, node_type):
         """ allows us to modify the NodeItem when a corresponding host node was created
@@ -313,11 +318,10 @@ class Nodegraph(Basegraph):
         """
         # we will store the original node type
         setattr(node, "node_type", node_type)
-        self._all_nodes.append(node)
 
     @QtCore.Slot(object)
-    def on_host_node_delted(self, node_name):
-        self._all_nodes.remove(node_name)
+    def on_host_node_deleted(self, node_name):
+        pass
 
     @QtCore.Slot(object)
     def on_search_field_opened(self):
