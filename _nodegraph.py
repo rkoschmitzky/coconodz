@@ -25,6 +25,10 @@ class Basegraph(object):
     # why. lets handle node querying bettter by providing
     # some useful properties
     @property
+    def nodes_dict(self):
+        return self._all_nodes
+
+    @property
     def all_nodes(self):
         return self._all_nodes.items()
 
@@ -275,6 +279,7 @@ class Nodegraph(Basegraph):
 
         """
         self.creation_field.signal_input_accepted.connect(self.on_creation_input_accepted)
+        self.search_field.signal_input_accepted.connect(self.on_search_input_accepted)
         self.search_field.signal_opened.connect(self.on_search_field_opened)
         self.graph.signal_host_node_created.connect(self.on_host_node_created)
 
@@ -302,8 +307,17 @@ class Nodegraph(Basegraph):
 
     @QtCore.Slot(object)
     def on_search_input_accepted(self, node_name):
-        # @todo add functionality that selects and focus node
-        pass
+        """ selects and focus the node by the given name from the searchfield
+
+        Args:
+            node_name: name of an existing node
+
+        Returns:
+
+        """
+        if node_name in self.nodes_dict:
+            self.nodes_dict[node_name].setSelected(True)
+            self.graph._focus()
 
     @QtCore.Slot(object)
     def on_host_node_created(self, node, node_type):
