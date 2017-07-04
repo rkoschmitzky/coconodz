@@ -5,11 +5,15 @@ from Qt import (QtWidgets,
                 QtCore,
                 QtGui
                 )
-
+import lib
+reload(lib)
 from lib import (BaseWindow,
                  SearchField,
-                 ConfiguationMixin
+                 GraphContext,
+                 ConfiguationMixin,
+                 monkeypatch_class
                  )
+
 import nodz_main
 
 
@@ -84,6 +88,23 @@ class Basegraph(object):
         raise NotImplementedError
 
 
+class NodeItem(nodz_main.NodeItem):
+    """ monkey patching original NodeItem class used by Nodz class
+
+    """
+    __metaclass__ = monkeypatch_class
+
+    _test = None
+
+    @property
+    def node_type(self):
+        return self._test
+
+    @node_type.setter
+    def node_type(self, node_type):
+        self._test = node_type
+
+
 class Nodz(ConfiguationMixin, nodz_main.Nodz):
     """ This class will let us override or extend behaviour
     for the purpose of better customization
@@ -93,6 +114,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     signal_host_node_created = QtCore.Signal(object, str)
     signal_node_plug_created = QtCore.Signal(object)
     signal_node_socket_created = QtCore.Signal(object)
+    signal_right_mouse_button_clicked = QtCore.Signal(object)
 
     def __init__(self, parent):
         super(Nodz, self).__init__(parent)
@@ -105,6 +127,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         self._search_field = SearchField(self)
         self._creation_field = SearchField(self)
+        self._context = GraphContext(self)
 
     @property
     def search_field(self):
@@ -124,6 +147,16 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         """
 
         return self._creation_field
+
+    @property
+    def context(self):
+        """ holds the creation field widgets
+
+        Returns:
+
+        """
+
+        return self._context
 
     def keyPressEvent(self, event):
         """ overriding the keyPressEvent method
@@ -160,6 +193,23 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         # Emit signal.
         self.signal_KeyPressed.emit(event.key())
 
+    def mousePressEvent(self, event):
+        """ extending the mousePressEvent
+
+        Args:
+            event:
+
+        Returns:
+
+        """
+
+        if (event.button() == QtCore.Qt.RightButton and
+            event.modifiers() == QtCore.Qt.NoModifier):
+            self.signal_right_mouse_button_clicked.emit(None)
+
+        super(Nodz, self).mousePressEvent(event)
+
+
 class Nodegraph(Basegraph):
     """ main Nodegraph that should be accessable without any host application
 
@@ -186,6 +236,7 @@ class Nodegraph(Basegraph):
 
         # just testing
         self.creation_field.available_items = ["test"]
+
 
     @property
     def window(self):
@@ -234,6 +285,10 @@ class Nodegraph(Basegraph):
     @property
     def creation_field(self):
         return self.graph.creation_field
+
+    @property
+    def context(self):
+        return self.graph.context
 
     def open(self, *args, **kwargs):
         """ opens the Nodegraph
@@ -287,6 +342,11 @@ class Nodegraph(Basegraph):
         self.graph.signal_AttrCreated.connect(self.on_attribute_created)
         self.graph.signal_node_socket_created.connect(self.on_socket_created)
         self.graph.signal_node_plug_created.connect(self.on_plug_created)
+        self.graph.signal_right_mouse_button_clicked.connect(self.on_right_click)
+
+    @QtCore.Slot(object)
+    def on_right_click(self):
+        self.context.open()
 
     @QtCore.Slot(object)
     def on_creation_input_accepted(self, node_type):
@@ -336,10 +396,10 @@ class Nodegraph(Basegraph):
 
         """
         # we will store the original node type
-        setattr(node, "node_type", node_type)
+        node.node_type = node_type
 
         # create default plug on node
-        self.graph.createAttribute(node, socket=False, name="message", dataType="message", index=0)
+        self.graph.createAttribute(node, name="message", dataType="message", index=0)
 
     @QtCore.Slot(object)
     def on_host_node_deleted(self, node_name):
@@ -352,6 +412,7 @@ class Nodegraph(Basegraph):
     @QtCore.Slot(str, int)
     def on_attribute_created(self, node_name, index):
         node = self.nodes_dict[node_name]
+        # check if attribute is a socket in graph
         if node.sockets:
             sockets = [socket for socket in node.sockets if node.sockets[socket].index == index]
             if sockets and len(sockets) != 1:
@@ -359,7 +420,8 @@ class Nodegraph(Basegraph):
             else:
                 socket = sockets[0]
                 if socket:
-                    self.graph.signal_node_socket_created.emit(socket)
+                    self.graph.signal_node_socket_created.emit(node.sockets[socket])
+        # and check if it is a plug in graph
         if node.plugs:
             plugs = [plug for plug in node.plugs if node.plugs[plug].index == index]
             if plugs and len(plugs) != 1:
@@ -367,13 +429,12 @@ class Nodegraph(Basegraph):
             else:
                 plug = plugs[0]
                 if plug:
-                    self.graph.signal_node_plug_created.emit(plug)
-
-
-    @QtCore.Slot(object)
-    def on_socket_created(self):
-        print "WOHOO SOCKET CREATED"
+                    self.graph.signal_node_plug_created.emit(node.plugs[plug])
 
     @QtCore.Slot(object)
-    def on_plug_created(self):
-        print "WOHOO PLUG Created"
+    def on_socket_created(self, socket_item):
+        pass
+
+    @QtCore.Slot(object)
+    def on_plug_created(self, plug_item):
+        pass

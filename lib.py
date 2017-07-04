@@ -77,15 +77,17 @@ class BaseWindow(QtWidgets.QMainWindow):
         self.central_widget.setLayout(self.central_layout)
 
 
-class BaseField(QtWidgets.QMenu):
+class ContextWidget(QtWidgets.QMenu):
 
     signal_available_items_changed = QtCore.Signal()
     signal_opened = QtCore.Signal()
 
     def __init__(self, parent):
-        super(BaseField, self).__init__(parent)
+        super(ContextWidget, self).__init__(parent)
 
         self._items = None
+        self._context = None
+        self._expect_msg = "Expected type {0}, got {1} instead"
 
     @property
     def available_items(self):
@@ -95,6 +97,20 @@ class BaseField(QtWidgets.QMenu):
     def available_items(self, items_dict):
         self._items = items_dict
         self.signal_available_items_changed.emit()
+
+    @property
+    def context(self):
+        return self._context
+
+    @context.setter
+    def context(self, context_widget):
+        self._context = context_widget
+
+    def update_context(self):
+        self.clear()
+        action = QtWidgets.QWidgetAction(self)
+        action.setDefaultWidget(self.context)
+        self.addAction(action)
 
     def setup_ui(self):
         """ connect overall signals
@@ -116,7 +132,49 @@ class BaseField(QtWidgets.QMenu):
         self.exec_()
 
 
-class AttributesField(BaseField):
+class GraphContext(ContextWidget):
+
+    def __init__(self, parent):
+        super(GraphContext, self).__init__(parent)
+
+        self.available_items = []
+        self.setup_ui()
+        self._actions = []
+
+    def add_button(self, button):
+        """ allows the addition of QPushButton instances to main layout only
+
+        Args:
+            button:
+
+        Returns:
+
+        """
+        assert isinstance(button, QtWidgets.QPushButton), \
+            self._expect_msg.format(QtWidgets.QPushButton, type(button))
+        self.central_layout.addWidget(button)
+        _LOG.info("Added button {0}".format(button))
+
+    def setup_ui(self):
+        super(GraphContext, self).setup_ui()
+        widget = QtWidgets.QWidget(self)
+        layout = QtWidgets.QVBoxLayout(widget)
+        for button in self.available_items:
+            layout.addWidget(button)
+        self.context = widget
+        self.update_context()
+
+    @QtCore.Slot()
+    def on_available_items_changed(self):
+        """ actions that should run if items have changed
+
+        Returns:
+
+        """
+        self.setup_ui()
+
+
+class AttributeContext(ContextWidget):
     """ simple tree view widget we will use to display node attributes in nodegraph
 
     """
@@ -124,7 +182,7 @@ class AttributesField(BaseField):
     signal_input_accepted = QtCore.Signal(str)
 
     def __init__(self, parent, attribute_mode=""):
-        super(AttributesField, self).__init__(parent)
+        super(AttributeContext, self).__init__(parent)
 
         self._attribute_mode = attribute_mode
         self._items = {}
@@ -136,7 +194,7 @@ class AttributesField(BaseField):
         self.tree.setHeaderLabels(["Attribute".format(self._attribute_mode)])
 
     def setup_ui(self):
-        super(AttributesField, self).setup_ui()
+        super(AttributeContext, self).setup_ui()
         self._setup_tree()
         self.mask = QtWidgets.QLineEdit()
         self.central_widget = QtWidgets.QWidget(self)
@@ -150,7 +208,7 @@ class AttributesField(BaseField):
         self.mask.setFocus()
 
 
-class SearchField(BaseField):
+class SearchField(ContextWidget):
     """ simple SearchField Widget we will use in the nodegraph
 
     """
@@ -171,10 +229,10 @@ class SearchField(BaseField):
         Returns:
 
         """
-        self.completer = QtWidgets.QCompleter(self.available_items)
-        self.completer.setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
-        self.completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
-        line_edit_widget.setCompleter(self.completer)
+        completer = QtWidgets.QCompleter(self.available_items)
+        completer.setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
+        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        line_edit_widget.setCompleter(completer)
 
     def setup_ui(self):
         """ extends the setup ui method
@@ -184,21 +242,11 @@ class SearchField(BaseField):
         super(SearchField, self).setup_ui()
         # set search field
         self.mask = QtWidgets.QLineEdit(self)
-        self.action = QtWidgets.QWidgetAction(self)
-        self.action.setDefaultWidget(self.mask)
-        self.addAction(self.action)
+        self.context = self.mask
+        self.update_context()
         self.mask.setFocus()
 
         self.mask.returnPressed.connect(self.on_accept)
-
-    @QtCore.Slot()
-    def on_available_items_changed(self):
-        """ actions that should run if items have changed
-
-        Returns:
-
-        """
-        self._setup_completer(self.mask)
 
     def on_accept(self):
         """ sends signal if input is one of the available items
@@ -210,6 +258,15 @@ class SearchField(BaseField):
         if search_input in self.available_items:
             self.signal_input_accepted.emit(search_input)
             self.close()
+
+    @QtCore.Slot()
+    def on_available_items_changed(self):
+        """ actions that should run if items have changed
+
+        Returns:
+
+        """
+        self._setup_completer(self.mask)
 
 
 class ConfiguationMixin(object):
@@ -355,3 +412,19 @@ def read_json(filepath):
             return data
         except ValueError:
             return data
+
+
+def monkeypatch_class(name, bases, namespace):
+    assert len(bases) == 1, "Exactly one base class required"
+    base = bases[0]
+    for name, value in namespace.iteritems():
+        if name != "__metaclass__":
+            setattr(base, name, value)
+    return base
+
+
+def monkeypatch_method(cls):
+    def decorator(func):
+        setattr(cls, func.__name__, func)
+        return func
+    return decorator
