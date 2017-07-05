@@ -9,9 +9,8 @@ import lib
 reload(lib)
 from lib import (BaseWindow,
                  SearchField,
-                 GraphContext,
+                 AttributeContext,
                  ConfiguationMixin,
-                 monkeypatch_class
                  )
 
 import nodz_main
@@ -88,23 +87,6 @@ class Basegraph(object):
         raise NotImplementedError
 
 
-class NodeItem(nodz_main.NodeItem):
-    """ monkey patching original NodeItem class used by Nodz class
-
-    """
-    __metaclass__ = monkeypatch_class
-
-    _test = None
-
-    @property
-    def node_type(self):
-        return self._test
-
-    @node_type.setter
-    def node_type(self, node_type):
-        self._test = node_type
-
-
 class Nodz(ConfiguationMixin, nodz_main.Nodz):
     """ This class will let us override or extend behaviour
     for the purpose of better customization
@@ -127,7 +109,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         self._search_field = SearchField(self)
         self._creation_field = SearchField(self)
-        self._context = GraphContext(self)
+        self._context = AttributeContext(self)
 
     @property
     def search_field(self):

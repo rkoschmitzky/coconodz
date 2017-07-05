@@ -105,8 +105,9 @@ class ContextWidget(QtWidgets.QMenu):
     @context.setter
     def context(self, context_widget):
         self._context = context_widget
+        self._update_context()
 
-    def update_context(self):
+    def _update_context(self):
         self.clear()
         action = QtWidgets.QWidgetAction(self)
         action.setDefaultWidget(self.context)
@@ -137,9 +138,10 @@ class GraphContext(ContextWidget):
     def __init__(self, parent):
         super(GraphContext, self).__init__(parent)
 
-        self.available_items = []
+        # defining items as empty list, because we want to loop trough
+        # in the setup_ui method
+        self.available_items = list()
         self.setup_ui()
-        self._actions = []
 
     def add_button(self, button):
         """ allows the addition of QPushButton instances to main layout only
@@ -162,7 +164,6 @@ class GraphContext(ContextWidget):
         for button in self.available_items:
             layout.addWidget(button)
         self.context = widget
-        self.update_context()
 
     @QtCore.Slot()
     def on_available_items_changed(self):
@@ -181,32 +182,90 @@ class AttributeContext(ContextWidget):
 
     signal_input_accepted = QtCore.Signal(str)
 
-    def __init__(self, parent, attribute_mode=""):
+    def __init__(self, parent, mode=""):
         super(AttributeContext, self).__init__(parent)
 
-        self._attribute_mode = attribute_mode
-        self._items = {}
+        # defining items as empty list, because we want to pass dictionary-like data
+        # within the tree widget in the setup_ui method
+        self.available_items = {"key1": "value1",
+                                  "key2": ["value1", "value2", "value3"],
+                                  "key3":{
+                                      "subkey1":"value1",
+                                      "subkey2":"value2",
+                                  },
+                                  "key4": "",
+                                  "key5": ("value1", "value2")}
+
+
+        self._mode = mode
         self.setup_ui()
 
-    def _setup_tree(self):
-        self.tree = QtWidgets.QTreeWidget(self)
-        self.tree.setColumnCount(1)
-        self.tree.setHeaderLabels(["Attribute".format(self._attribute_mode)])
+    @property
+    def mode(self):
+        return self._mode
+
+    @mode.setter
+    def mode(self, value):
+        assert isinstance(value, basestring), self._expect_msg.format("string", type(value))
+        self._mode = value
+
+    def _populate_tree(self, treeWidget):
+        """
+
+        Args:
+            treeWidget:
+
+        Returns:
+
+        """
+        # recursive items addition
+        def _add_items(parent, data):
+            for key, value in data.iteritems():
+                if value:
+                    treeItem = QtWidgets.QTreeWidgetItem(parent)
+                    treeItem.setText(0, key)
+                    treeWidget.addTopLevelItem(treeItem)
+                    if isinstance(value, (basestring, int, float, bool)):
+                        value = list([value])
+                    if isinstance(value, (list, tuple)):
+                        for member in value:
+                            child = QtWidgets.QTreeWidgetItem(treeItem)
+                            child.setText(0, member)
+                            treeItem.addChild(child)
+                    if isinstance(value, dict):
+                        if not isinstance(parent, QtWidgets.QTreeWidget):
+                            parent.addChild(self.treeItem)
+                        else:
+                            _add_items(treeItem, value)
+
+        _add_items(treeWidget, self.available_items)
 
     def setup_ui(self):
         super(AttributeContext, self).setup_ui()
-        self._setup_tree()
-        self.mask = QtWidgets.QLineEdit()
-        self.central_widget = QtWidgets.QWidget(self)
-        self.central_layout = QtWidgets.QVBoxLayout(self.central_widget)
-        self.central_layout.addWidget(self.mask)
-        self.central_layout.addWidget(self.tree)
 
-        self.action = QtWidgets.QWidgetAction(self)
-        self.action.setDefaultWidget(self.central_widget)
-        self.addAction(self.action)
-        self.mask.setFocus()
+        widget = QtWidgets.QWidget(self)
+        layout = QtWidgets.QVBoxLayout(widget)
+        tree = QtWidgets.QTreeWidget()
+        tree.setColumnCount(1)
+        tree.setHeaderLabels([self.mode])
 
+        self._populate_tree(tree)
+
+        mask = QtWidgets.QLineEdit()
+
+        layout.addWidget(mask)
+        layout.addWidget(tree)
+
+        self.context = widget
+
+    @QtCore.Slot()
+    def on_available_items_changed(self):
+        """ actions that should run if items have changed
+
+        Returns:
+
+        """
+        self.setup_ui()
 
 class SearchField(ContextWidget):
     """ simple SearchField Widget we will use in the nodegraph
@@ -243,7 +302,6 @@ class SearchField(ContextWidget):
         # set search field
         self.mask = QtWidgets.QLineEdit(self)
         self.context = self.mask
-        self.update_context()
         self.mask.setFocus()
 
         self.mask.returnPressed.connect(self.on_accept)
