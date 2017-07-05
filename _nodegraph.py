@@ -8,6 +8,7 @@ from Qt import (QtWidgets,
 import lib
 reload(lib)
 from lib import (BaseWindow,
+                 ContextWidget,
                  SearchField,
                  AttributeContext,
                  ConfiguationMixin,
@@ -109,7 +110,8 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         self._search_field = SearchField(self)
         self._creation_field = SearchField(self)
-        self._context = AttributeContext(self)
+        self._context = ContextWidget(self)
+        self._attribute_field = AttributeContext(self)
 
     @property
     def search_field(self):
@@ -139,6 +141,16 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         """
 
         return self._context
+
+    @property
+    def attribute_field(self):
+        """ holds the attribute field widgets
+
+        Returns:
+
+        """
+
+        return self._attribute_field
 
     def keyPressEvent(self, event):
         """ overriding the keyPressEvent method
@@ -219,7 +231,6 @@ class Nodegraph(Basegraph):
         # just testing
         self.creation_field.available_items = ["test"]
 
-
     @property
     def window(self):
         """ holds the Window which serves as parent to all other widgets
@@ -272,6 +283,10 @@ class Nodegraph(Basegraph):
     def context(self):
         return self.graph.context
 
+    @property
+    def attribute_field(self):
+        return self.graph.attribute_field
+
     def open(self, *args, **kwargs):
         """ opens the Nodegraph
 
@@ -320,6 +335,7 @@ class Nodegraph(Basegraph):
         self.creation_field.signal_input_accepted.connect(self.on_creation_input_accepted)
         self.search_field.signal_input_accepted.connect(self.on_search_input_accepted)
         self.search_field.signal_opened.connect(self.on_search_field_opened)
+        self.attribute_field.signal_input_accepted.connect(self.on_attribute_input_accepted)
         self.graph.signal_host_node_created.connect(self.on_host_node_created)
         self.graph.signal_AttrCreated.connect(self.on_attribute_created)
         self.graph.signal_node_socket_created.connect(self.on_socket_created)
@@ -328,7 +344,7 @@ class Nodegraph(Basegraph):
 
     @QtCore.Slot(object)
     def on_right_click(self):
-        self.context.open()
+        self.attribute_field.open()
 
     @QtCore.Slot(object)
     def on_creation_input_accepted(self, node_type):
@@ -365,6 +381,11 @@ class Nodegraph(Basegraph):
         if node_name in self.nodes_dict:
             self.nodes_dict[node_name].setSelected(True)
             self.graph._focus()
+
+    @QtCore.Slot(object)
+    def on_attribute_input_accepted(self, attribute_name):
+        print attribute_name
+        self.graph.attribute_field.close()
 
     @QtCore.Slot(object)
     def on_host_node_created(self, node, node_type):

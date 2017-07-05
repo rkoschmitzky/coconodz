@@ -187,18 +187,11 @@ class AttributeContext(ContextWidget):
 
         # defining items as empty list, because we want to pass dictionary-like data
         # within the tree widget in the setup_ui method
-        self.available_items = {"key1": "value1",
-                                  "key2": ["value1", "value2", "value3"],
-                                  "key3":{
-                                      "subkey1":"value1",
-                                      "subkey2":"value2",
-                                  },
-                                  "key4": "",
-                                  "key5": ("value1", "value2")}
-
-
+        self.available_items = dict()
         self._mode = mode
+        self._tree_widget = None
         self.setup_ui()
+        self.tree = None
 
     @property
     def mode(self):
@@ -209,11 +202,19 @@ class AttributeContext(ContextWidget):
         assert isinstance(value, basestring), self._expect_msg.format("string", type(value))
         self._mode = value
 
-    def _populate_tree(self, treeWidget):
+    @property
+    def tree_widget(self):
+        return self._tree_widget
+
+    @tree_widget.setter
+    def tree_widget(self, widget):
+        self._tree_widget = widget
+
+    def _populate_tree(self, tree_widget):
         """
 
         Args:
-            treeWidget:
+            tree_widget:
 
         Returns:
 
@@ -224,7 +225,7 @@ class AttributeContext(ContextWidget):
                 if value:
                     treeItem = QtWidgets.QTreeWidgetItem(parent)
                     treeItem.setText(0, key)
-                    treeWidget.addTopLevelItem(treeItem)
+                    tree_widget.addTopLevelItem(treeItem)
                     if isinstance(value, (basestring, int, float, bool)):
                         value = list([value])
                     if isinstance(value, (list, tuple)):
@@ -234,29 +235,37 @@ class AttributeContext(ContextWidget):
                             treeItem.addChild(child)
                     if isinstance(value, dict):
                         if not isinstance(parent, QtWidgets.QTreeWidget):
-                            parent.addChild(self.treeItem)
+                            parent.addChild(treeItem)
                         else:
                             _add_items(treeItem, value)
 
-        _add_items(treeWidget, self.available_items)
+        _add_items(tree_widget, self.available_items)
 
     def setup_ui(self):
         super(AttributeContext, self).setup_ui()
 
         widget = QtWidgets.QWidget(self)
+        filter_layout = QtWidgets.QHBoxLayout()
+        label = QtWidgets.QLabel("Filter:")
+        mask = QtWidgets.QLineEdit()
+        filter_layout.addWidget(label)
+        filter_layout.addWidget(mask)
+
         layout = QtWidgets.QVBoxLayout(widget)
+        layout.addLayout(filter_layout)
+
         tree = QtWidgets.QTreeWidget()
         tree.setColumnCount(1)
         tree.setHeaderLabels([self.mode])
+        tree.sortItems(0, QtCore.Qt.AscendingOrder)
 
+        layout.addWidget(tree)
         self._populate_tree(tree)
 
-        mask = QtWidgets.QLineEdit()
-
-        layout.addWidget(mask)
-        layout.addWidget(tree)
+        tree.doubleClicked.connect(self.on_tree_double_clicked)
 
         self.context = widget
+        self.tree_widget = tree
 
     @QtCore.Slot()
     def on_available_items_changed(self):
@@ -266,6 +275,12 @@ class AttributeContext(ContextWidget):
 
         """
         self.setup_ui()
+
+    @QtCore.Slot(object)
+    def on_tree_double_clicked(self, index):
+        if self.tree_widget:
+            self.signal_input_accepted.emit(self.tree_widget.itemFromIndex(index).text(0))
+
 
 class SearchField(ContextWidget):
     """ simple SearchField Widget we will use in the nodegraph
