@@ -267,7 +267,6 @@ class AttributeContext(ContextWidget):
         self.context = widget
         self.tree_widget = tree
 
-    @QtCore.Slot()
     def on_available_items_changed(self):
         """ actions that should run if items have changed
 
@@ -276,7 +275,6 @@ class AttributeContext(ContextWidget):
         """
         self.setup_ui()
 
-    @QtCore.Slot(object)
     def on_tree_double_clicked(self, index):
         if self.tree_widget:
             self.signal_input_accepted.emit(self.tree_widget.itemFromIndex(index).text(0))
@@ -332,7 +330,6 @@ class SearchField(ContextWidget):
             self.signal_input_accepted.emit(search_input)
             self.close()
 
-    @QtCore.Slot()
     def on_available_items_changed(self):
         """ actions that should run if items have changed
 

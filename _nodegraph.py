@@ -342,11 +342,9 @@ class Nodegraph(Basegraph):
         self.graph.signal_node_plug_created.connect(self.on_plug_created)
         self.graph.signal_right_mouse_button_clicked.connect(self.on_right_click)
 
-    @QtCore.Slot(object)
     def on_right_click(self):
         self.attribute_field.open()
 
-    @QtCore.Slot(object)
     def on_creation_input_accepted(self, node_type):
         """ creates a NodeItem of given type and emit additional signals
 
@@ -368,7 +366,6 @@ class Nodegraph(Basegraph):
             node = self.graph.createNode()
         self.graph.signal_host_node_created.emit(node, node_type)
 
-    @QtCore.Slot(object)
     def on_search_input_accepted(self, node_name):
         """ selects and focus the node by the given name from the searchfield
 
@@ -382,12 +379,10 @@ class Nodegraph(Basegraph):
             self.nodes_dict[node_name].setSelected(True)
             self.graph._focus()
 
-    @QtCore.Slot(object)
     def on_attribute_input_accepted(self, attribute_name):
         print attribute_name
         self.graph.attribute_field.close()
 
-    @QtCore.Slot(object)
     def on_host_node_created(self, node, node_type):
         """ allows us to modify the NodeItem when a corresponding host node was created
 
@@ -404,15 +399,12 @@ class Nodegraph(Basegraph):
         # create default plug on node
         self.graph.createAttribute(node, name="message", dataType="message", index=0)
 
-    @QtCore.Slot(object)
     def on_host_node_deleted(self, node_name):
         pass
 
-    @QtCore.Slot(object)
     def on_search_field_opened(self):
         self.search_field.available_items = self.all_node_names
 
-    @QtCore.Slot(str, int)
     def on_attribute_created(self, node_name, index):
         node = self.nodes_dict[node_name]
         # check if attribute is a socket in graph
@@ -434,10 +426,8 @@ class Nodegraph(Basegraph):
                 if plug:
                     self.graph.signal_node_plug_created.emit(node.plugs[plug])
 
-    @QtCore.Slot(object)
     def on_socket_created(self, socket_item):
         pass
 
-    @QtCore.Slot(object)
     def on_plug_created(self, plug_item):
         pass
