@@ -165,7 +165,6 @@ class GraphContext(ContextWidget):
             layout.addWidget(button)
         self.context = widget
 
-    @QtCore.Slot()
     def on_available_items_changed(self):
         """ actions that should run if items have changed
 
@@ -190,8 +189,9 @@ class AttributeContext(ContextWidget):
         self.available_items = dict()
         self._mode = mode
         self._tree_widget = None
+        self._mask_widget = None
+        self._column = 0
         self.setup_ui()
-        self.tree = None
 
     @property
     def mode(self):
@@ -207,38 +207,50 @@ class AttributeContext(ContextWidget):
         return self._tree_widget
 
     @tree_widget.setter
-    def tree_widget(self, widget):
-        self._tree_widget = widget
+    def tree_widget(self, tree_widget):
+        self._tree_widget = tree_widget
+
+    @property
+    def mask_widget(self):
+        return self._mask_widget
+
+    @mask_widget.setter
+    def mask_widget(self, line_edit_widget):
+        self._mask_widget = line_edit_widget
 
     def _populate_tree(self, tree_widget):
-        """
+        """ based on the dictionary data this will add all the items
 
         Args:
-            tree_widget:
+            tree_widget: QTreeWidget
 
         Returns:
 
         """
+        tree_items = []
         # recursive items addition
         def _add_items(parent, data):
             for key, value in data.iteritems():
                 if value:
-                    treeItem = QtWidgets.QTreeWidgetItem(parent)
-                    treeItem.setText(0, key)
-                    tree_widget.addTopLevelItem(treeItem)
+                    tree_item = QtWidgets.QTreeWidgetItem(parent)
+                    tree_item.setText(0, key)
+                    tree_widget.addTopLevelItem(tree_item)
+                    tree_items.append(tree_item)
                     if isinstance(value, (basestring, int, float, bool)):
                         value = list([value])
                     if isinstance(value, (list, tuple)):
                         for member in value:
-                            child = QtWidgets.QTreeWidgetItem(treeItem)
+                            child = QtWidgets.QTreeWidgetItem(tree_item)
                             child.setText(0, member)
-                            treeItem.addChild(child)
+                            tree_item.addChild(child)
+                            tree_items.append(child)
                     if isinstance(value, dict):
                         if not isinstance(parent, QtWidgets.QTreeWidget):
-                            parent.addChild(treeItem)
+                            parent.addChild(tree_item)
                         else:
-                            _add_items(treeItem, value)
+                            _add_items(tree_item, value)
 
+        # add all items
         _add_items(tree_widget, self.available_items)
 
     def setup_ui(self):
@@ -255,17 +267,19 @@ class AttributeContext(ContextWidget):
         layout.addLayout(filter_layout)
 
         tree = QtWidgets.QTreeWidget()
-        tree.setColumnCount(1)
+        tree.setColumnCount(self._column + 1)
         tree.setHeaderLabels([self.mode])
-        tree.sortItems(0, QtCore.Qt.AscendingOrder)
+        tree.sortItems(self._column, QtCore.Qt.AscendingOrder)
 
         layout.addWidget(tree)
         self._populate_tree(tree)
 
         tree.doubleClicked.connect(self.on_tree_double_clicked)
+        mask.textChanged.connect(self.on_filter_changed)
 
         self.context = widget
         self.tree_widget = tree
+        self.mask_widget = mask
 
     def on_available_items_changed(self):
         """ actions that should run if items have changed
@@ -277,7 +291,44 @@ class AttributeContext(ContextWidget):
 
     def on_tree_double_clicked(self, index):
         if self.tree_widget:
-            self.signal_input_accepted.emit(self.tree_widget.itemFromIndex(index).text(0))
+            self.signal_input_accepted.emit(self.tree_widget.itemFromIndex(index).text(self._column))
+
+    def on_filter_changed(self):
+        """ look for item text matches based on the filter string and display only matched items
+
+        Returns:
+
+        """
+        # couldn't find an easy way to get a list of currently
+        # displayed items, therefore this implementations has to hide all items first
+        # looking for string matched on all items
+        # and unhide all matched items and all their parents recursively
+
+        # recursively enabling item visibilities upstream
+        def _unhide_parent(item):
+            item.setHidden(False)
+            if item.parent():
+                _unhide_parent(item.parent())
+
+        iterator = QtWidgets.QTreeWidgetItemIterator(self.tree_widget, QtWidgets.QTreeWidgetItemIterator.All)
+        while iterator.value():
+            iterator.value().setHidden(True)
+            iterator += 1
+
+        # look for matches and show them
+        input_string = str(self.mask_widget.text())
+        if input_string != "":
+            matched_items = self.tree_widget.findItems(input_string,
+                                             (QtCore.Qt.MatchContains | QtCore.Qt.MatchRecursive | QtCore.Qt.MatchCaseSensitive))
+            for item in matched_items:
+                _unhide_parent(item)
+        else:
+            # unfortunately an empty string returns a match for all items
+            # in this case we will show all items again
+            iterator = QtWidgets.QTreeWidgetItemIterator(self.tree_widget, QtWidgets.QTreeWidgetItemIterator.All)
+            while iterator.value():
+                iterator.value().setHidden(False)
+                iterator += 1
 
 
 class SearchField(ContextWidget):

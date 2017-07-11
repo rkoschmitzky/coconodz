@@ -103,10 +103,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         super(Nodz, self).__init__(parent)
 
         self.initialize_configuration()
-        # monkey patching original configuration
-        # this will replace the global variable config
-        # directly in the nodz_main scope
-        nodz_main.config = self.configuration_data
+        self.config = self.configuration_data
 
         self._search_field = SearchField(self)
         self._creation_field = SearchField(self)
