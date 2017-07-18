@@ -390,6 +390,14 @@ class SearchField(ContextWidget):
         self._setup_completer(self.mask)
 
 
+class BackdropItem(QtWidgets.QGraphicsRectItem):
+
+    def __init__(self, *args, **kwargs):
+        super(BackdropItem, self).__init(*args, **kwargs)
+
+        raise NotImplementedError
+
+
 class ConfiguationMixin(object):
     """ configuration class that makes dict/json type data accessable through dot lookups
 

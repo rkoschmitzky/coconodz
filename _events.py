@@ -101,13 +101,13 @@ class Events(object):
             except RuntimeError:
                 _LOG.error('Not able to remove event {0}'.format(event_name), exc_info=True)
 
-    def registerCallbacks(self):
+    def register_events(self):
         """!@brief main method to overwrite to register all related events
 
         """
         raise NotImplementedError
 
-    def deregisterCallbacks(self):
+    def deregister_events(self):
         """!@brief main method to overwrite to deregister all related events
 
         """

@@ -5,16 +5,18 @@ from Qt import (QtWidgets,
                 QtCore,
                 QtGui
                 )
+
+import nodz_main
+
 import lib
 reload(lib)
 from lib import (BaseWindow,
-                 ContextWidget,
+                 GraphContext,
                  SearchField,
                  AttributeContext,
                  ConfiguationMixin,
                  )
-
-import nodz_main
+from _events import Events
 
 
 class Basegraph(object):
@@ -88,6 +90,52 @@ class Basegraph(object):
         raise NotImplementedError
 
 
+class NodeItem(nodz_main.NodeItem):
+
+    signal_context_request = QtCore.Signal(object)
+
+    def __init__(self, name, alternate, preset, config):
+        super(NodeItem, self).__init__(name, alternate, preset, config)
+
+        self._node_type = None
+        self._plugs_dict = {}
+        self._sockets_dict = {}
+
+    @property
+    def node_type(self):
+        return self._node_type
+
+    @node_type.setter
+    def node_type(self, value):
+        assert isinstance(value, str)
+        self._node_type = value
+
+    @property
+    def plugs_dict(self):
+        return self._plugs_dict
+
+    @plugs_dict.setter
+    def plugs_dict(self, plugs_dict):
+        assert isinstance(plugs_dict, dict)
+        self._plugs_dict = plugs_dict
+
+    @property
+    def sockets_dict(self):
+        return self._sockets_dict
+
+    @sockets_dict.setter
+    def sockets_dict(self, sockets_dict):
+        assert isinstance(sockets_dict, dict)
+        self._sockets_dict = sockets_dict
+
+    def mousePressEvent(self, event):
+        if (event.button() == QtCore.Qt.RightButton and
+            event.modifiers() == QtCore.Qt.ControlModifier):
+            self.signal_context_request.emit(self)
+        else:
+            super(NodeItem, self).mouseMoveEvent(event)
+
+
 class Nodz(ConfiguationMixin, nodz_main.Nodz):
     """ This class will let us override or extend behaviour
     for the purpose of better customization
@@ -97,7 +145,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     signal_host_node_created = QtCore.Signal(object, str)
     signal_node_plug_created = QtCore.Signal(object)
     signal_node_socket_created = QtCore.Signal(object)
-    signal_right_mouse_button_clicked = QtCore.Signal(object)
+    signal_context_request = QtCore.Signal(object)
 
     def __init__(self, parent):
         super(Nodz, self).__init__(parent)
@@ -107,7 +155,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         self._search_field = SearchField(self)
         self._creation_field = SearchField(self)
-        self._context = ContextWidget(self)
+        self._context = GraphContext(self)
         self._attribute_field = AttributeContext(self)
 
     @property
@@ -196,9 +244,51 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         if (event.button() == QtCore.Qt.RightButton and
             event.modifiers() == QtCore.Qt.NoModifier):
-            self.signal_right_mouse_button_clicked.emit(None)
+            self.signal_context_request.emit(self)
 
         super(Nodz, self).mousePressEvent(event)
+
+    def createNode(self, name='default', preset='node_default', position=None, alternate=True):
+        """ overriding createNode method
+
+        Args:
+            name:
+            preset:
+            position:
+            alternate:
+
+        Returns:
+
+        """
+        nodeItem = NodeItem(name=name, alternate=alternate, preset=preset,
+                            config=self.configuration_data)
+        nodeItem.signal_context_request.connect(self.on_context_request)
+        # Store node in scene.
+        self.scene().nodes[name] = nodeItem
+
+        if not position:
+            # Get the center of the view.
+            position = self.mapToScene(self.viewport().rect().center())
+
+        # Set node position.
+        self.scene().addItem(nodeItem)
+        nodeItem.setPos(position - nodeItem.nodeCenter)
+
+        # Emit signal.
+        self.signal_NodeCreated.emit(name)
+
+        return nodeItem
+
+    def on_context_request(self, node_item):
+        """ placeholder method, has to be overriden in Nodegraphclass
+
+        Args:
+            node_item:
+
+        Returns:
+
+        """
+        pass
 
 
 class Nodegraph(Basegraph):
@@ -211,6 +301,7 @@ class Nodegraph(Basegraph):
         # this can be overriden in subclasses to allow mixing in other classes
         # that are not host agnostic
         self._window = BaseWindow(parent)
+        self._events = Events()
 
         # create the graphingscene
         self._graph = Nodz(self._window)
@@ -223,7 +314,7 @@ class Nodegraph(Basegraph):
         self.window.central_layout.addWidget(self.graph)
 
         # set slots
-        self.connect_slots()
+        self.register_events()
 
         # just testing
         self.creation_field.available_items = ["test"]
@@ -267,6 +358,10 @@ class Nodegraph(Basegraph):
 
         """
         return self.graph.configuration
+
+    @property
+    def events(self):
+        return self._events
 
     @property
     def search_field(self):
@@ -320,27 +415,62 @@ class Nodegraph(Basegraph):
         # @todo update functionality
 
     def clear(self):
-        # @todo it shall clear the craph without emitting node deleted signals
         self.graph.clearGraph()
 
-    def connect_slots(self):
+    def _connect_slot(self, signal, slot):
+        signal.connect(slot)
+
+    def _disconnect_slot(self, signal, slot):
+        signal.disconnect(slot)
+
+    def register_events(self):
         """ setup all slots
 
         Returns:
 
         """
-        self.creation_field.signal_input_accepted.connect(self.on_creation_input_accepted)
-        self.search_field.signal_input_accepted.connect(self.on_search_input_accepted)
-        self.search_field.signal_opened.connect(self.on_search_field_opened)
-        self.attribute_field.signal_input_accepted.connect(self.on_attribute_input_accepted)
-        self.graph.signal_host_node_created.connect(self.on_host_node_created)
-        self.graph.signal_AttrCreated.connect(self.on_attribute_created)
-        self.graph.signal_node_socket_created.connect(self.on_socket_created)
-        self.graph.signal_node_plug_created.connect(self.on_plug_created)
-        self.graph.signal_right_mouse_button_clicked.connect(self.on_right_click)
+        # patching per node slot
+        self.graph.on_context_request = self.on_context_request
 
-    def on_right_click(self):
-        self.attribute_field.open()
+        self.events.add_event("creation_field_input_accepted", self._connect_slot,
+                              self.creation_field.signal_input_accepted,
+                              self.on_creation_input_accepted)
+        self.events.add_event("search_field_input_accepted", self._connect_slot,
+                              self.search_field.signal_input_accepted,
+                              self.on_search_input_accepted)
+        self.events.add_event("search_field_opened", self._connect_slot,
+                              self.search_field.signal_opened,
+                              self.on_search_field_opened)
+        self.events.add_event("attribute_field_input_accepted", self._connect_slot,
+                              self.attribute_field.signal_input_accepted,
+                              self.on_attribute_input_accepted)
+        self.events.add_event("host_node_created", self._connect_slot,
+                              self.graph.signal_host_node_created,
+                              self.on_host_node_created)
+        self.events.add_event("attribute_created", self._connect_slot,
+                              self.graph.signal_AttrCreated,
+                              self.on_attribute_created)
+        self.events.add_event("socket_created", self._connect_slot,
+                              self.graph.signal_node_socket_created,
+                              self.on_socket_created)
+        self.events.add_event("plug_created", self._connect_slot,
+                              self.graph.signal_node_plug_created,
+                              self.on_plug_created)
+        self.events.add_event("context_request", self._connect_slot,
+                              self.graph.signal_context_request,
+                              self.on_context_request)
+
+    def on_context_request(self, widget):
+        _to_open = None
+        if isinstance(widget, Nodz):
+            _to_open = self.context
+        elif isinstance(widget, NodeItem):
+            _to_open = self.attribute_field
+        else:
+            pass
+
+        if _to_open:
+            _to_open.open()
 
     def on_creation_input_accepted(self, node_type):
         """ creates a NodeItem of given type and emit additional signals
@@ -377,7 +507,6 @@ class Nodegraph(Basegraph):
             self.graph._focus()
 
     def on_attribute_input_accepted(self, attribute_name):
-        print attribute_name
         self.graph.attribute_field.close()
 
     def on_host_node_created(self, node, node_type):
@@ -414,14 +543,14 @@ class Nodegraph(Basegraph):
                 if socket:
                     self.graph.signal_node_socket_created.emit(node.sockets[socket])
         # and check if it is a plug in graph
-        if node.plugs:
-            plugs = [plug for plug in node.plugs if node.plugs[plug].index == index]
+        if node.plugs_dict:
+            plugs = [plug for plug in node.plugs_dict if node.plugs_dict[plug].index == index]
             if plugs and len(plugs) != 1:
                 raise ValueError("Could not find plug to emit signal on creation")
             else:
                 plug = plugs[0]
                 if plug:
-                    self.graph.signal_node_plug_created.emit(node.plugs[plug])
+                    self.graph.signal_node_plug_created.emit(node.plugs_dict[plug])
 
     def on_socket_created(self, socket_item):
         pass
