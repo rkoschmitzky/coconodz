@@ -10,6 +10,7 @@ import nodz_main
 
 import lib
 reload(lib)
+
 from lib import (BaseWindow,
                  GraphContext,
                  SearchField,
@@ -156,13 +157,13 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         self._search_field = SearchField(self)
         self._creation_field = SearchField(self)
         self._context = GraphContext(self)
-        self._attribute_field = AttributeContext(self)
+        self._attribute_context = AttributeContext(self)
 
     @property
     def search_field(self):
         """ holds the search field widget
 
-        Returns: SearchField
+        Returns: SearchField instance
 
         """
         return self._search_field
@@ -171,7 +172,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     def creation_field(self):
         """ holds the creation field widgets
 
-        Returns:
+        Returns: SearchField instance
 
         """
 
@@ -181,21 +182,21 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     def context(self):
         """ holds the creation field widgets
 
-        Returns:
+        Returns: GraphContext instance
 
         """
 
         return self._context
 
     @property
-    def attribute_field(self):
+    def attribute_context(self):
         """ holds the attribute field widgets
 
-        Returns:
+        Returns: AttributeContext instance
 
         """
 
-        return self._attribute_field
+        return self._attribute_context
 
     def keyPressEvent(self, event):
         """ overriding the keyPressEvent method
@@ -296,8 +297,8 @@ class Nodegraph(Basegraph):
 
     """
 
-    def __init__(self, parent=None):
-        super(Nodegraph, self).__init__(parent)
+    def __init__(self, parent=None, creation_items=[]):
+        super(Nodegraph, self).__init__(parent=parent)
         # this can be overriden in subclasses to allow mixing in other classes
         # that are not host agnostic
         self._window = BaseWindow(parent)
@@ -317,7 +318,10 @@ class Nodegraph(Basegraph):
         self.register_events()
 
         # just testing
-        self.creation_field.available_items = ["test"]
+        if creation_items:
+            self.creation_field.available_items = creation_items
+
+        print self.events.callbacks
 
     @property
     def window(self):
@@ -333,7 +337,7 @@ class Nodegraph(Basegraph):
         """ holds the Window which serves as parent to all other widgets
 
         Args:
-            window: QMainWindow
+            window: QMainWindow instance
 
         Returns:
 
@@ -345,7 +349,7 @@ class Nodegraph(Basegraph):
     def graph(self):
         """ holds the nodegraph widget
 
-        Returns: Nodz
+        Returns: Nodz instance
 
         """
         return self._graph
@@ -354,30 +358,55 @@ class Nodegraph(Basegraph):
     def configuration(self):
         """ holds the configuration
 
-        Returns: ConfigurationMixin
+        Returns: ConfigurationMixin instance
 
         """
         return self.graph.configuration
 
     @property
     def events(self):
+        """ holds the events
+
+        Returns: Events instance
+
+        """
         return self._events
 
     @property
     def search_field(self):
+        """ holds the search field widget
+
+        Returns: SearchField instance
+
+        """
         return self.graph.search_field
 
     @property
     def creation_field(self):
+        """ holds the creation field widget
+
+        Returns: SearchField instance
+
+        """
         return self.graph.creation_field
 
     @property
     def context(self):
+        """ holds the graph context widget
+
+        Returns: GraphContext instance
+
+        """
         return self.graph.context
 
     @property
-    def attribute_field(self):
-        return self.graph.attribute_field
+    def attribute_context(self):
+        """ holds the attribute field widget
+
+        Returns: SearchField instance
+
+        """
+        return self.graph.attribute_context
 
     def open(self, *args, **kwargs):
         """ opens the Nodegraph
@@ -442,7 +471,7 @@ class Nodegraph(Basegraph):
                               self.search_field.signal_opened,
                               self.on_search_field_opened)
         self.events.add_event("attribute_field_input_accepted", self._connect_slot,
-                              self.attribute_field.signal_input_accepted,
+                              self.attribute_context.signal_input_accepted,
                               self.on_attribute_input_accepted)
         self.events.add_event("host_node_created", self._connect_slot,
                               self.graph.signal_host_node_created,
@@ -461,11 +490,19 @@ class Nodegraph(Basegraph):
                               self.on_context_request)
 
     def on_context_request(self, widget):
+        """ opens the field or context widgets based on widget type
+
+        Args:
+            widget: Nodz or NodeItem or SocketItem or PlugItem instance
+
+        Returns:
+
+        """
         _to_open = None
         if isinstance(widget, Nodz):
             _to_open = self.context
         elif isinstance(widget, NodeItem):
-            _to_open = self.attribute_field
+            _to_open = self.attribute_context
         else:
             pass
 
@@ -507,7 +544,7 @@ class Nodegraph(Basegraph):
             self.graph._focus()
 
     def on_attribute_input_accepted(self, attribute_name):
-        self.graph.attribute_field.close()
+        self.graph.attribute_context.close()
 
     def on_host_node_created(self, node, node_type):
         """ allows us to modify the NodeItem when a corresponding host node was created

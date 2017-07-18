@@ -1,17 +1,18 @@
 import logging
 
-_LOG = logging.getLogger(name="CocoNodz.events")
+from lib import Singleton
+
+LOG = logging.getLogger(name="CocoNodz.events")
 
 
-class Events(object):
+class Events(Singleton):
     """ base class other specific event classes should inherit from, which includes the base methods for adding
     and removing events
 
     This class should help to keep custom eventhandling more organized
     """
 
-    def __init__(self):
-        self.__callbacks = {}
+    __callbacks = {}
 
     @property
     def callbacks(self):
@@ -36,23 +37,13 @@ class Events(object):
         self.__callbacks = callbacks
 
     @property
-    def callbacks_copy(self):
-        """ an explicit copy of the dictionary that holds the registered eventNames and their values, this has to be
-        used when removing events
-
-        Returns:
-
-        """
-        return self.callbacks.copy()
-
-    @property
     def registered_events(self):
         """ all registered event names
 
         Returns: list with event names
 
         """
-        return self.callbacks_copy.keys()
+        return self.callbacks.copy().keys()
 
     def add_event(self, event_name, callable, *callable_args, **callable_kwargs):
         """ base method to register an event
@@ -67,17 +58,17 @@ class Events(object):
 
         """
         if self.callbacks.has_key(event_name):
-            _LOG.error('Event name already exits. Skipped adding event. Use the override flag to override the event.')
+            LOG.error('Event name already exits. Skipped adding event. Use the override flag to override the event.')
         else:
             try:
                 callbacks = self.callbacks
                 _callback = callable(*callable_args, **callable_kwargs)
                 callbacks[event_name] = _callback
-                _LOG.info('Added event named %s' % event_name)
+                LOG.info('Added event named %s' % event_name)
                 self.callbacks = callbacks
                 return _callback
             except RuntimeError:
-                _LOG.error('Failed to register callback.', exc_info=True)
+                LOG.error('Failed to register callback.', exc_info=True)
 
     def remove_event(self, event_name, callable, *callable_args, **callable_kwargs):
         """ base method to deregister an event
@@ -97,18 +88,6 @@ class Events(object):
                 callable(*callable_args, **callable_kwargs)
                 del callbacks[event_name]
                 self.callbacks = callbacks
-                _LOG.info('Removed event %s' % event_name)
+                LOG.info('Removed event %s' % event_name)
             except RuntimeError:
-                _LOG.error('Not able to remove event {0}'.format(event_name), exc_info=True)
-
-    def register_events(self):
-        """!@brief main method to overwrite to register all related events
-
-        """
-        raise NotImplementedError
-
-    def deregister_events(self):
-        """!@brief main method to overwrite to deregister all related events
-
-        """
-        raise NotImplementedError
+                LOG.error('Not able to remove event {0}'.format(event_name), exc_info=True)

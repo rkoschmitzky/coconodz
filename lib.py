@@ -9,7 +9,7 @@ from Qt import (QtWidgets,
                )
 
 
-_LOG = logging.getLogger(name="CocoNodz.nodegraph")
+LOG = logging.getLogger(name="CocoNodz.nodegraph")
 
 
 class SafeOpen(object):
@@ -155,7 +155,7 @@ class GraphContext(ContextWidget):
         assert isinstance(button, QtWidgets.QPushButton), \
             self._expect_msg.format(QtWidgets.QPushButton, type(button))
         self.central_layout.addWidget(button)
-        _LOG.info("Added button {0}".format(button))
+        LOG.info("Added button {0}".format(button))
 
     def setup_ui(self):
         super(GraphContext, self).setup_ui()
@@ -449,7 +449,7 @@ class ConfiguationMixin(object):
         Returns:
 
         """
-        _LOG.warning("Loading base configuration from {0}".format(configuration_file))
+        LOG.warning("Loading base configuration from {0}".format(configuration_file))
         data = read_json(configuration_file)
         self.configuration = DictDotLookup(data)
 
@@ -511,6 +511,13 @@ class DictDotLookup(object):
         return self.__original_data
 
 
+class Singleton(object):
+    def __new__(type):
+        if not '_the_instance' in type.__dict__:
+            type._the_instance = object.__new__(type)
+        return type._the_instance
+
+
 def write_json(filepath, data):
     """ helper to save data to json
 
@@ -541,19 +548,3 @@ def read_json(filepath):
             return data
         except ValueError:
             return data
-
-
-def monkeypatch_class(name, bases, namespace):
-    assert len(bases) == 1, "Exactly one base class required"
-    base = bases[0]
-    for name, value in namespace.iteritems():
-        if name != "__metaclass__":
-            setattr(base, name, value)
-    return base
-
-
-def monkeypatch_method(cls):
-    def decorator(func):
-        setattr(cls, func.__name__, func)
-        return func
-    return decorator

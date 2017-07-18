@@ -25,15 +25,12 @@ class Nodzgraph(Nodegraph):
     """ Maya Nodegraph widget implementation
 
     """
-    def __init__(self, parent=maya_main_window()):
-        super(Nodzgraph, self).__init__(parent)
+    def __init__(self, parent=maya_main_window(), creation_items=pmc.listNodeTypes("shader")):
+        super(Nodzgraph, self).__init__(parent, creation_items)
 
         # just providing docking features for Maya 2017 and newer
         if int(pmc.about(api=True)) >= 201700:
             self.window = MayaBaseWindow(parent)
-
-        # add shaders to search field widget
-        self.creation_field.available_items = pmc.listNodeTypes("shader")
 
     def open(self):
         """ opens the Nodegraph with dockable configuration settings
