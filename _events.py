@@ -57,8 +57,9 @@ class Events(Singleton):
         Returns: value, which should be a callback ID/hash
 
         """
-        if self.data.has_key(event_name):
-            LOG.error('Event name already exits. Skipped adding event. Use the override flag to override the event.')
+        if event_name in self.data:
+            LOG.warning('Event name already exits. Skipped adding event. Use the override flag to override the event.')
+            return
         else:
             try:
                 event_data = {"adder": adder,
@@ -94,8 +95,9 @@ class Events(Singleton):
         if event_name in self.data.keys():
             assert self.data[event_name]["remover"], "No event remover callable attached"
             remover = self.data[event_name]["remover"]
+            event_data = self.data[event_name]
             try:
-                remover(*remover["remover_args"], **remover["remover_kwargs"])
+                remover(*event_data["remover_args"], **event_data["remover_kwargs"])
                 del data_copy[event_name]
                 self.data = data_copy
                 LOG.info('Removed event %s' % event_name)

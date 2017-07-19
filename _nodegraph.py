@@ -147,6 +147,8 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     signal_node_plug_created = QtCore.Signal(object)
     signal_node_socket_created = QtCore.Signal(object)
     signal_context_request = QtCore.Signal(object)
+    signal_creation_field_request = QtCore.Signal()
+    signal_search_field_request = QtCore.Signal()
 
     def __init__(self, parent):
         super(Nodz, self).__init__(parent)
@@ -210,25 +212,19 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         if event.key() not in self.pressedKeys:
             self.pressedKeys.append(event.key())
-
         if event.key() == QtCore.Qt.Key_Delete:
             self._deleteSelectedNodes()
-
         if (event.key() == QtCore.Qt.Key_F and
             event.modifiers() == QtCore.Qt.NoModifier):
             self._focus()
-
         if (event.key() == QtCore.Qt.Key_S and
             event.modifiers() == QtCore.Qt.NoModifier):
             self._nodeSnap = True
-
-        # show SearchField widget on Tab press
         if event.key() == QtCore.Qt.Key_Tab:
-            self.creation_field.open()
-
+            self.signal_creation_field_request.emit()
         if (event.key() == QtCore.Qt.Key_F and
             event.modifiers() == QtCore.Qt.ControlModifier):
-            self.search_field.open()
+            self.signal_search_field_request.emit()
 
         # Emit signal.
         self.signal_KeyPressed.emit(event.key())
@@ -459,10 +455,24 @@ class Nodegraph(Basegraph):
         # patching per node slot
         self.graph.on_context_request = self.on_context_request
 
+        self.events.add_event("creation_field_request", self._connect_slot,
+                              adder_args=(self.graph.signal_creation_field_request,
+                                          self.on_creation_field_request
+                                          )
+                              )
         self.events.add_event("creation_field_input_accepted", self._connect_slot,
                               adder_args=(self.creation_field.signal_input_accepted,
                                           self.on_creation_input_accepted
                                           )
+                              )
+        self.events.add_event("search_field_request", self._connect_slot,
+                              adder_args=(self.graph.signal_search_field_request,
+                                          self.on_search_field_request
+                                          ),
+                              remover=self._disconnect_slot,
+                              remover_args=(self.graph.signal_search_field_request,
+                                            self.on_search_field_request
+                                            )
                               )
         self.events.add_event("search_field_input_accepted", self._connect_slot,
                               adder_args=(self.search_field.signal_input_accepted,
@@ -472,6 +482,11 @@ class Nodegraph(Basegraph):
         self.events.add_event("search_field_opened", self._connect_slot,
                               adder_args=(self.search_field.signal_opened,
                                           self.on_search_field_opened
+                                          )
+                              )
+        self.events.add_event("context_request", self._connect_slot,
+                              adder_args=(self.graph.signal_context_request,
+                                          self.on_context_request
                                           )
                               )
         self.events.add_event("attribute_field_input_accepted", self._connect_slot,
@@ -498,11 +513,12 @@ class Nodegraph(Basegraph):
                                           self.on_plug_created
                                           )
                               )
-        self.events.add_event("context_request", self._connect_slot,
-                              adder_args=(self.graph.signal_context_request,
-                                          self.on_context_request
-                                          )
-                              )
+
+    def on_creation_field_request(self):
+        self.creation_field.open()
+
+    def on_search_field_request(self):
+        self.search_field.open()
 
     def on_context_request(self, widget):
         """ opens the field or context widgets based on widget type
