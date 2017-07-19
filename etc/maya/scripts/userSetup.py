@@ -27,14 +27,8 @@ def add_template_custom_content(nodeName):
     AEHook(nodeName)
 
 
-# pmc.callbacks(addCallback=add_template_custom_content,
-#               hook='AETemplateCustomContent',
-#               owner="coconodz")
-
 _EVENTS.add_event("ShadingEngine_template_hook",
-                  pmc.callbacks,
-                  addCallback=add_template_custom_content,
-                  hook="AETemplateCustomContent",
-                  owner="coconodz")
-#
-# print _EVENTS.callbacks
+                  pmc.callbacks, adder_kwargs={
+                  "addCallback":add_template_custom_content,
+                  "hook":"AETemplateCustomContent",
+                  "owner":"coconodz"})

@@ -321,8 +321,6 @@ class Nodegraph(Basegraph):
         if creation_items:
             self.creation_field.available_items = creation_items
 
-        print self.events.callbacks
-
     @property
     def window(self):
         """ holds the Window which serves as parent to all other widgets
@@ -462,32 +460,49 @@ class Nodegraph(Basegraph):
         self.graph.on_context_request = self.on_context_request
 
         self.events.add_event("creation_field_input_accepted", self._connect_slot,
-                              self.creation_field.signal_input_accepted,
-                              self.on_creation_input_accepted)
+                              adder_args=(self.creation_field.signal_input_accepted,
+                                          self.on_creation_input_accepted
+                                          )
+                              )
         self.events.add_event("search_field_input_accepted", self._connect_slot,
-                              self.search_field.signal_input_accepted,
-                              self.on_search_input_accepted)
+                              adder_args=(self.search_field.signal_input_accepted,
+                                          self.on_search_input_accepted
+                                          )
+                              )
         self.events.add_event("search_field_opened", self._connect_slot,
-                              self.search_field.signal_opened,
-                              self.on_search_field_opened)
+                              adder_args=(self.search_field.signal_opened,
+                                          self.on_search_field_opened
+                                          )
+                              )
         self.events.add_event("attribute_field_input_accepted", self._connect_slot,
-                              self.attribute_context.signal_input_accepted,
-                              self.on_attribute_input_accepted)
+                              adder_args=(self.attribute_context.signal_input_accepted,
+                                          self.on_attribute_input_accepted)
+                              )
         self.events.add_event("host_node_created", self._connect_slot,
-                              self.graph.signal_host_node_created,
-                              self.on_host_node_created)
+                              adder_args=(self.graph.signal_host_node_created,
+                                          self.on_host_node_created
+                                          )
+                              )
         self.events.add_event("attribute_created", self._connect_slot,
-                              self.graph.signal_AttrCreated,
-                              self.on_attribute_created)
+                              adder_args=(self.graph.signal_AttrCreated,
+                                          self.on_attribute_created
+                                          )
+                              )
         self.events.add_event("socket_created", self._connect_slot,
-                              self.graph.signal_node_socket_created,
-                              self.on_socket_created)
+                              adder_args=(self.graph.signal_node_socket_created,
+                                          self.on_socket_created
+                                          )
+                              )
         self.events.add_event("plug_created", self._connect_slot,
-                              self.graph.signal_node_plug_created,
-                              self.on_plug_created)
+                              adder_args=(self.graph.signal_node_plug_created,
+                                          self.on_plug_created
+                                          )
+                              )
         self.events.add_event("context_request", self._connect_slot,
-                              self.graph.signal_context_request,
-                              self.on_context_request)
+                              adder_args=(self.graph.signal_context_request,
+                                          self.on_context_request
+                                          )
+                              )
 
     def on_context_request(self, widget):
         """ opens the field or context widgets based on widget type

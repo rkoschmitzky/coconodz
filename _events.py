@@ -12,19 +12,19 @@ class Events(Singleton):
     This class should help to keep custom eventhandling more organized
     """
 
-    __callbacks = {}
+    __data = {}
 
     @property
-    def callbacks(self):
+    def data(self):
         """ dictionary that holds the registered eventNames and their values
 
         Returns: dictionary
 
         """
-        return self.__callbacks
+        return self.__data
 
-    @callbacks.setter
-    def callbacks(self, callbacks):
+    @data.setter
+    def data(self, callbacks):
         """ setter of the dictionary that holds the registered event names and their values
 
         Args:
@@ -34,7 +34,7 @@ class Events(Singleton):
 
         """
         assert isinstance(callbacks, dict)
-        self.__callbacks = callbacks
+        self.__data = callbacks
 
     @property
     def registered_events(self):
@@ -43,34 +43,42 @@ class Events(Singleton):
         Returns: list with event names
 
         """
-        return self.callbacks.copy().keys()
+        return self.data.keys()
 
-    def add_event(self, event_name, callable, *callable_args, **callable_kwargs):
+    def add_event(self, event_name, adder, owner=None, description="", remover=None, adder_args=(), adder_kwargs={}, remover_args=(), remover_kwargs={}):
         """ base method to register an event
 
         Args:
             event_name: name identified for the event
-            callable: callable function or callable for the event
-            *callable_args: arguments that will be passed to the callable
-            **callable_kwargs: keyword arguments that will be passed to the callable
+            adder: callable function or callable for the event
+            *adder_callable_args: arguments that will be passed to the callable
+            **adder_callable_kwargs: keyword arguments that will be passed to the callable
 
         Returns: value, which should be a callback ID/hash
 
         """
-        if self.callbacks.has_key(event_name):
+        if self.data.has_key(event_name):
             LOG.error('Event name already exits. Skipped adding event. Use the override flag to override the event.')
         else:
             try:
-                callbacks = self.callbacks
-                _callback = callable(*callable_args, **callable_kwargs)
-                callbacks[event_name] = _callback
+                event_data = {"adder": adder,
+                              "adder_args": adder_args,
+                              "adder_kwargs": adder_kwargs,
+                              "remover": remover,
+                              "remover_args": remover_args,
+                              "remover_kwargs": remover_kwargs,
+                              "id": None,
+                              "owner": owner,
+                              "description": description}
+
+                event_data["id"] = adder(*adder_args, **adder_kwargs)
+                self.data[event_name] = event_data
                 LOG.info('Added event named %s' % event_name)
-                self.callbacks = callbacks
-                return _callback
+
             except RuntimeError:
                 LOG.error('Failed to register callback.', exc_info=True)
 
-    def remove_event(self, event_name, callable, *callable_args, **callable_kwargs):
+    def remove_event(self, event_name):
         """ base method to deregister an event
 
         Args:
@@ -82,12 +90,14 @@ class Events(Singleton):
         Returns:
 
         """
-        if self.callbacks.has_key(event_name):
+        data_copy = self.data.copy()
+        if event_name in self.data.keys():
+            assert self.data[event_name]["remover"], "No event remover callable attached"
+            remover = self.data[event_name]["remover"]
             try:
-                callbacks = self.callbacks
-                callable(*callable_args, **callable_kwargs)
-                del callbacks[event_name]
-                self.callbacks = callbacks
+                remover(*remover["remover_args"], **remover["remover_kwargs"])
+                del data_copy[event_name]
+                self.data = data_copy
                 LOG.info('Removed event %s' % event_name)
             except RuntimeError:
                 LOG.error('Not able to remove event {0}'.format(event_name), exc_info=True)
