@@ -79,6 +79,9 @@ class Events(Singleton):
             except RuntimeError:
                 LOG.error('Failed to register callback.', exc_info=True)
 
+    def attach_remover(self, callable, callable_args=(), callable_kwargs={}):
+        raise NotImplementedError
+
     def remove_event(self, event_name):
         """ base method to deregister an event
 
@@ -103,3 +106,9 @@ class Events(Singleton):
                 LOG.info('Removed event %s' % event_name)
             except RuntimeError:
                 LOG.error('Not able to remove event {0}'.format(event_name), exc_info=True)
+
+    def pause_event(self):
+        raise NotImplementedError
+
+    def remove_all_events(self):
+        raise NotImplementedError
