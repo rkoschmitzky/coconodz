@@ -51,6 +51,13 @@ class Basegraph(object):
     def selected_node_names(self):
         return [_.name for _ in self.selected_nodes if _.isSelected()]
 
+    def get_node_by_name(self, node_name):
+        if node_name in self.nodes_dict:
+            return self.nodes_dict[node_name]
+
+    def on_node_name_changed(self, old_name, new_name):
+        raise NotImplementedError
+
     def reset_configuration(self):
         raise NotImplementedError
 
@@ -583,12 +590,15 @@ class Nodegraph(Basegraph):
         if isinstance(widget, Nodz):
             _to_open = self.context
         elif isinstance(widget, NodeItem):
+            self.attribute_context.setProperty("node_name", widget.name)
             _to_open = self.attribute_context
         else:
             pass
 
         if _to_open:
             _to_open.open()
+
+        return _to_open
 
     def on_creation_input_accepted(self, node_type):
         """ creates a NodeItem of given type and emit additional signals
@@ -624,8 +634,10 @@ class Nodegraph(Basegraph):
             self.nodes_dict[node_name].setSelected(True)
             self.graph._focus()
 
-    def on_attribute_input_accepted(self, attribute_name):
+    def on_attribute_input_accepted(self, node_name, attribute_name):
         self.graph.attribute_context.close()
+        node = self.get_node_by_name(node_name)
+        self.graph.createAttribute(node, name=attribute_name)
 
     def on_host_node_created(self, node, node_type):
         """ allows us to modify the NodeItem when a corresponding host node was created
@@ -637,12 +649,11 @@ class Nodegraph(Basegraph):
         Returns:
 
         """
-        print node_type
         # we will store the original node type
         node.node_type = node_type
 
         # create default plug on node
-        self.graph.createAttribute(node, name="message", dataType="message", index=0)
+        self.graph.createAttribute(node, name="message", socket=False, dataType="message", index=0)
 
     def on_host_node_deleted(self, node_name):
         pass

@@ -5,8 +5,9 @@ from Qt import (QtWidgets,
                 )
 
 from etc.maya.qtutilities import maya_main_window
+from etc.maya import applib
 
-from _nodegraph import Nodegraph
+import _nodegraph
 from lib import BaseWindow
 
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
@@ -21,7 +22,7 @@ class MayaBaseWindow(MayaQWidgetDockableMixin, BaseWindow):
         super(MayaBaseWindow, self).__init__(parent)
 
 
-class Nodzgraph(Nodegraph):
+class Nodzgraph(_nodegraph.Nodegraph):
     """ Maya Nodegraph widget implementation
 
     """
@@ -60,3 +61,18 @@ class Nodzgraph(Nodegraph):
         self.graph.editNode(node, newName=host_node.name())
 
         super(Nodzgraph, self).on_host_node_created(node, node_type)
+
+    def on_context_request(self, widget):
+        _widget = super(Nodzgraph, self).on_context_request(widget)
+
+        if isinstance(widget, _nodegraph.Nodz):
+            _widget.available_items = []
+        elif isinstance(widget, _nodegraph.NodeItem):
+            node = pmc.PyNode(_widget.property("node_name"))
+            if node:
+                # only update items if the node has changed
+                if _widget.property("last_node_name") != node.name():
+                    _widget.available_items = applib.get_attribute_tree(node)
+                    _widget.setProperty("last_node_name", node.name())
+        else:
+            pass

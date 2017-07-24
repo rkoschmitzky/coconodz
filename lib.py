@@ -179,7 +179,7 @@ class AttributeContext(ContextWidget):
 
     """
 
-    signal_input_accepted = QtCore.Signal(str)
+    signal_input_accepted = QtCore.Signal(str, str)
 
     def __init__(self, parent, mode=""):
         super(AttributeContext, self).__init__(parent)
@@ -291,7 +291,7 @@ class AttributeContext(ContextWidget):
 
     def on_tree_double_clicked(self, index):
         if self.tree_widget:
-            self.signal_input_accepted.emit(self.tree_widget.itemFromIndex(index).text(self._column))
+            self.signal_input_accepted.emit(self.property("node_name"), self.tree_widget.itemFromIndex(index).text(self._column))
 
     def on_filter_changed(self):
         """ look for item text matches based on the filter string and display only matched items
