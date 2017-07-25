@@ -588,7 +588,7 @@ class Nodegraph(Basegraph):
         """
         _to_open = None
         if isinstance(widget, Nodz):
-            _to_open = self.context
+            _to_open = self.graph.context
         elif isinstance(widget, NodeItem):
             self.attribute_context.setProperty("node_name", widget.name)
             _to_open = self.attribute_context

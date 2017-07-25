@@ -12,14 +12,17 @@ def get_attribute_tree(node):
     """
     parents = {}
     for attr in node.listAttr():
-        _parent = attr.getParent(arrays=True)
-        if not _parent and not attr.name() in parents:
-            if not attr.isArray() and not attr.isChild():
-                parents[attr.longName()] = []
-            elif attr.isArray():
-                parents[attr.longName()] = [attr.longName() for attr in attr.children()]
-        elif _parent and _parent.longName() in parents:
-            parents[_parent.longName()].append(attr.longName())
-    return parents
 
+        if not attr.isChild() and not attr.isMulti():
+            # add children
+            if not attr.longName() in parents:
+                parents[attr.longName()] = []
+                for _attr in attr.iterDescendants():
+                    parents[attr.longName()].append(_attr.longName())
+        # for some reason the iterDescentants method is not returning the proper children
+        # for the array plug
+        elif attr.isMulti():
+            parents[attr.longName()] = [_attr.longName() for _attr in attr.children()]
+
+    return parents
 

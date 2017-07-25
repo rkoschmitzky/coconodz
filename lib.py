@@ -231,11 +231,11 @@ class AttributeContext(ContextWidget):
         # recursive items addition
         def _add_items(parent, data):
             for key, value in data.iteritems():
+                tree_item = QtWidgets.QTreeWidgetItem(parent)
+                tree_item.setText(0, key)
+                tree_widget.addTopLevelItem(tree_item)
+                tree_items.append(tree_item)
                 if value:
-                    tree_item = QtWidgets.QTreeWidgetItem(parent)
-                    tree_item.setText(0, key)
-                    tree_widget.addTopLevelItem(tree_item)
-                    tree_items.append(tree_item)
                     if isinstance(value, (basestring, int, float, bool)):
                         value = list([value])
                     if isinstance(value, (list, tuple)):

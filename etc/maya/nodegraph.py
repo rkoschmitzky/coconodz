@@ -6,7 +6,7 @@ from Qt import (QtWidgets,
 
 from etc.maya.qtutilities import maya_main_window
 from etc.maya import applib
-
+reload(applib)
 import _nodegraph
 from lib import BaseWindow
 
