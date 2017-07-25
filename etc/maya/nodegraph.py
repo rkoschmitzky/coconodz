@@ -8,6 +8,7 @@ from etc.maya.qtutilities import maya_main_window
 from etc.maya import applib
 reload(applib)
 import _nodegraph
+reload(_nodegraph)
 from lib import BaseWindow
 
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
@@ -76,3 +77,20 @@ class Nodzgraph(_nodegraph.Nodegraph):
                     _widget.setProperty("last_node_name", node.name())
         else:
             pass
+
+    def on_about_attribute_create(self, node_name, attribute_name):
+        """ slot override
+
+        Args:
+            node_name:
+            attribute_name:
+
+        Returns:
+
+        """
+        node = self.get_node_by_name(node_name)
+        attribute_type = pmc.PyNode("{0}.{1}".format(node_name, attribute_name)).type()
+        self.graph.createAttribute(node,
+                                   name=attribute_name,
+                                   preset="datatype_{0}".format(attribute_type),
+                                   dataType=attribute_type)

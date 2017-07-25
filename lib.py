@@ -291,7 +291,8 @@ class AttributeContext(ContextWidget):
 
     def on_tree_double_clicked(self, index):
         if self.tree_widget:
-            self.signal_input_accepted.emit(self.property("node_name"), self.tree_widget.itemFromIndex(index).text(self._column))
+            self.signal_input_accepted.emit(self.property("node_name"),
+                                            self.tree_widget.itemFromIndex(index).text(self._column))
 
     def on_filter_changed(self):
         """ look for item text matches based on the filter string and display only matched items

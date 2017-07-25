@@ -153,6 +153,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     signal_host_node_created = QtCore.Signal(object, str)
     signal_node_plug_created = QtCore.Signal(object)
     signal_node_socket_created = QtCore.Signal(object)
+    signal_about_attribute_create = QtCore.Signal(str, str)
     signal_context_request = QtCore.Signal(object)
     signal_creation_field_request = QtCore.Signal()
     signal_search_field_request = QtCore.Signal()
@@ -541,6 +542,14 @@ class Nodegraph(Basegraph):
                                             self.on_host_node_created
                                             )
                               )
+        self.events.add_event("about_attribute_create",
+                              adder=self._connect_slot,
+                              adder_args=(self.graph.signal_about_attribute_create,
+                                          self.on_about_attribute_create),
+                              remover=self._disconnect_slot,
+                              remover_args=(self.graph.signal_about_attribute_create,
+                                            self.on_about_attribute_create)
+                              )
         self.events.add_event("attribute_created",
                               adder=self._connect_slot,
                               adder_args=(self.graph.signal_AttrCreated,
@@ -636,6 +645,9 @@ class Nodegraph(Basegraph):
 
     def on_attribute_input_accepted(self, node_name, attribute_name):
         self.graph.attribute_context.close()
+        self.graph.signal_about_attribute_create.emit(node_name, attribute_name)
+
+    def on_about_attribute_create(self, node_name, attribute_name):
         node = self.get_node_by_name(node_name)
         self.graph.createAttribute(node, name=attribute_name)
 
@@ -653,7 +665,7 @@ class Nodegraph(Basegraph):
         node.node_type = node_type
 
         # create default plug on node
-        self.graph.createAttribute(node, name="message", socket=False, dataType="message", index=0)
+        self.graph.createAttribute(node, name="message", preset="datatype_message", socket=False, dataType="message", index=0)
 
     def on_host_node_deleted(self, node_name):
         pass
