@@ -90,7 +90,16 @@ class Nodzgraph(_nodegraph.Nodegraph):
         """
         node = self.get_node_by_name(node_name)
         attribute_type = pmc.PyNode("{0}.{1}".format(node_name, attribute_name)).type()
-        self.graph.createAttribute(node,
-                                   name=attribute_name,
-                                   preset="datatype_{0}".format(attribute_type),
-                                   dataType=attribute_type)
+
+        _ = "datatype_{0}".format(attribute_type)
+        if hasattr(self.graph.configuration, _):
+            # and create node with included preset
+            self.graph.createAttribute(node,
+                                       name=attribute_name,
+                                       preset=_,
+                                       dataType=attribute_type)
+        else:
+            self.graph.createAttribute(node,
+                                       name=attribute_name,
+                                       dataType=attribute_type)
+
