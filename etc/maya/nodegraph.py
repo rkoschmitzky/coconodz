@@ -45,7 +45,7 @@ class Nodzgraph(_nodegraph.Nodegraph):
                                     self.configuration.maya.floating
                                     )
 
-    def on_host_node_created(self, node, node_type):
+    def on_host_node_created(self, node):
         """ slot override
 
         This adds a maya node of the given node type and renames the
@@ -58,10 +58,10 @@ class Nodzgraph(_nodegraph.Nodegraph):
         Returns:
 
         """
-        host_node = pmc.createNode(node_type)
+        host_node = pmc.createNode(node.node_type)
         self.graph.editNode(node, newName=host_node.name())
 
-        super(Nodzgraph, self).on_host_node_created(node, node_type)
+        super(Nodzgraph, self).on_host_node_created(node)
 
     def on_context_request(self, widget):
         _widget = super(Nodzgraph, self).on_context_request(widget)
@@ -90,16 +90,6 @@ class Nodzgraph(_nodegraph.Nodegraph):
         """
         node = self.get_node_by_name(node_name)
         attribute_type = pmc.PyNode("{0}.{1}".format(node_name, attribute_name)).type()
+        node.add_attribute(attribute_name, data_type=attribute_type)
 
-        _ = "datatype_{0}".format(attribute_type)
-        if hasattr(self.graph.configuration, _):
-            # and create node with included preset
-            self.graph.createAttribute(node,
-                                       name=attribute_name,
-                                       preset=_,
-                                       dataType=attribute_type)
-        else:
-            self.graph.createAttribute(node,
-                                       name=attribute_name,
-                                       dataType=attribute_type)
 

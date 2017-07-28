@@ -20,6 +20,9 @@ from lib import (BaseWindow,
 from events import Events
 
 
+LOG = logging.getLogger(name="CocoNodz.nodegraph")
+
+
 class Basegraph(object):
 
     def __init__(self, *args, **kwargs):
@@ -148,7 +151,7 @@ class NodeItem(nodz_main.NodeItem):
         else:
             super(NodeItem, self).mouseMoveEvent(event)
 
-    def add_attribute(self, name, add_mode=None, preset="", plug=True, socket=True, data_type=""):
+    def add_attribute(self, name, add_mode=None, plug=True, socket=True, data_type=""):
         """ wrapper around the _createAttribute method that allows better customization of attribute generation
 
         Args:
@@ -163,9 +166,14 @@ class NodeItem(nodz_main.NodeItem):
 
         """
 
-        # closure to avoid redoing it all the time when checking for valid configuration entry
+        # closure to avoid redoing preset checking all the time
         def _do_creation():
-            if not preset or preset not in self._config:
+            if data_type:
+                preset = "datatype_{0}".format(data_type)
+            else:
+                preset = "datatype_default"
+            if preset not in self._config:
+                LOG.info("Attribute preset for type {0} not configured.".format(data_type))
                 self._createAttribute(name, index, "datatype_default", plug, socket, data_type)
             else:
                 self._createAttribute(name, index, preset, plug, socket, data_type)
@@ -178,6 +186,7 @@ class NodeItem(nodz_main.NodeItem):
         _allowed_modes = ["top", "bottom", "alphabetical"]
         assert add_mode in _allowed_modes, "Unknown mode. Choose from: " + "".join("'{0}' ".format(_) for _ in _allowed_modes)
 
+        # create attribute at expected index
         if add_mode == "top":
             index = 0
             _do_creation()
@@ -190,6 +199,8 @@ class NodeItem(nodz_main.NodeItem):
             _sorted = sorted(_attrs)
             index = _sorted.index(name)
             _do_creation()
+        else:
+            raise NotImplementedError
 
 
 class Nodz(ConfiguationMixin, nodz_main.Nodz):
@@ -198,7 +209,8 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
     """
 
-    signal_host_node_created = QtCore.Signal(object, str)
+    signal_node_created = QtCore.Signal(object)
+    signal_host_node_created = QtCore.Signal(object)
     signal_node_plug_created = QtCore.Signal(object)
     signal_node_socket_created = QtCore.Signal(object)
     signal_connection_created = QtCore.Signal(object, object)
@@ -302,7 +314,19 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         super(Nodz, self).mousePressEvent(event)
 
-    def createNode(self, name='default', preset='node_default', position=None, alternate=True):
+    def create_node(self, name, position=None, alternate=False, node_type="default"):
+
+        _ = "node_{0}".format(node_type)
+        if hasattr(self.configuration, _):
+            # and create node with included preset
+            node = self.createNode(name, _, position, alternate)
+        else:
+            LOG.info("Node preset for type {0} not configured.".format(node_type))
+            node = self.createNode(name, position=position, alternate=alternate)
+        node.node_type = node_type
+        return node
+
+    def createNode(self, name="default", preset="node_default", position=None, alternate=True, node_type="default"):
         """ overriding createNode method
 
         Args:
@@ -329,7 +353,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         nodeItem.setPos(position - nodeItem.nodeCenter)
 
         # Emit signal.
-        self.signal_NodeCreated.emit(name)
+        self.signal_node_created.emit(self)
 
         return nodeItem
 
@@ -692,13 +716,8 @@ class Nodegraph(Basegraph):
 
         """
         # find out if there is a configuration for this node type
-        _ = "node_{0}".format(node_type)
-        if hasattr(self.graph.configuration, _):
-            # and create node with included preset
-            node = self.graph.createNode(preset=_)
-        else:
-            node = self.graph.createNode()
-        self.graph.signal_host_node_created.emit(node, node_type)
+        node = self.graph.create_node(node_type, node_type=node_type)
+        self.graph.signal_host_node_created.emit(node)
 
     def on_search_input_accepted(self, node_name):
         """ selects and focus the node by the given name from the searchfield
@@ -721,7 +740,7 @@ class Nodegraph(Basegraph):
         node = self.get_node_by_name(node_name)
         self.graph.createAttribute(node, name=attribute_name)
 
-    def on_host_node_created(self, node, node_type):
+    def on_host_node_created(self, node):
         """ allows us to modify the NodeItem when a corresponding host node was created
 
         Args:
@@ -731,11 +750,8 @@ class Nodegraph(Basegraph):
         Returns:
 
         """
-        # we will store the original node type
-        node.node_type = node_type
-
         # create default plug on node
-        self.graph.createAttribute(node, name="message", preset="datatype_message", socket=False, dataType="message")
+        node.add_attribute(name="message", socket=False, data_type="message")
 
     def on_host_node_deleted(self, node_name):
         pass
