@@ -101,6 +101,7 @@ class Basegraph(object):
 class NodeItem(nodz_main.NodeItem):
 
     signal_context_request = QtCore.Signal(object)
+    signal_attr_created = QtCore.Signal(object, int)
 
     def __init__(self, name, alternate, preset, config):
         super(NodeItem, self).__init__(name, alternate, preset, config)
@@ -108,6 +109,10 @@ class NodeItem(nodz_main.NodeItem):
         self._node_type = None
         self._plugs_dict = {}
         self._sockets_dict = {}
+
+        # unfortunately the original NodeItem implementation doesn't store the config
+        # by default
+        self._config = config
 
     @property
     def node_type(self):
@@ -143,6 +148,49 @@ class NodeItem(nodz_main.NodeItem):
         else:
             super(NodeItem, self).mouseMoveEvent(event)
 
+    def add_attribute(self, name, add_mode=None, preset="", plug=True, socket=True, data_type=""):
+        """ wrapper around the _createAttribute method that allows better customization of attribute generation
+
+        Args:
+            name:
+            add_mode:
+            preset:
+            plug:
+            socket:
+            data_type:
+
+        Returns:
+
+        """
+
+        # closure to avoid redoing it all the time when checking for valid configuration entry
+        def _do_creation():
+            if not preset or preset not in self._config:
+                self._createAttribute(name, index, "datatype_default", plug, socket, data_type)
+            else:
+                self._createAttribute(name, index, preset, plug, socket, data_type)
+            self.signal_attr_created.emit(self, index)
+
+        # if no add_mode is defined take the order from the config
+        if not add_mode:
+            add_mode = self._config["attribute_order"]
+
+        _allowed_modes = ["top", "bottom", "alphabetical"]
+        assert add_mode in _allowed_modes, "Unknown mode. Choose from: " + "".join("'{0}' ".format(_) for _ in _allowed_modes)
+
+        if add_mode == "top":
+            index = 0
+            _do_creation()
+        elif add_mode == "bottom":
+            index = -1
+            _do_creation()
+        elif add_mode == "alphabetical":
+            _attrs = list(self.attrs)
+            _attrs.append(name)
+            _sorted = sorted(_attrs)
+            index = _sorted.index(name)
+            _do_creation()
+
 
 class Nodz(ConfiguationMixin, nodz_main.Nodz):
     """ This class will let us override or extend behaviour
@@ -153,6 +201,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     signal_host_node_created = QtCore.Signal(object, str)
     signal_node_plug_created = QtCore.Signal(object)
     signal_node_socket_created = QtCore.Signal(object)
+    signal_connection_created = QtCore.Signal(object, object)
     signal_about_attribute_create = QtCore.Signal(str, str)
     signal_context_request = QtCore.Signal(object)
     signal_creation_field_request = QtCore.Signal()
@@ -307,6 +356,7 @@ class Nodegraph(Basegraph):
         # that are not host agnostic
         self._window = BaseWindow(parent)
         self._events = Events()
+        self._signal_block = False
 
         # create the graphingscene
         self._graph = Nodz(self._window)
@@ -579,6 +629,26 @@ class Nodegraph(Basegraph):
                                             self.on_plug_created
                                             )
                               )
+        self.events.add_event("plug_connected",
+                              adder=self._connect_slot,
+                              adder_args=(self.graph.signal_PlugConnected,
+                                          self.on_plug_connected
+                                          ),
+                              remover=self._disconnect_slot,
+                              remover_kwargs=(self.graph.signal_PlugConnected,
+                                              self.on_plug_connected
+                                              )
+                              )
+        self.events.add_event("socket_connected",
+                              adder=self._connect_slot,
+                              adder_args=(self.graph.signal_SocketConnected,
+                                          self.on_socket_connected
+                                          ),
+                              remover=self._disconnect_slot,
+                              remover_kwargs=(self.graph.signal_SocketConnected,
+                                              self.on_socket_connected
+                                              )
+                              )
 
     def on_creation_field_request(self):
         self.creation_field.open()
@@ -665,7 +735,7 @@ class Nodegraph(Basegraph):
         node.node_type = node_type
 
         # create default plug on node
-        self.graph.createAttribute(node, name="message", preset="datatype_message", socket=False, dataType="message", index=0)
+        self.graph.createAttribute(node, name="message", preset="datatype_message", socket=False, dataType="message")
 
     def on_host_node_deleted(self, node_name):
         pass
@@ -675,9 +745,15 @@ class Nodegraph(Basegraph):
 
     def on_attribute_created(self, node_name, index):
         node = self.nodes_dict[node_name]
+
+        for _ in node.sockets:
+            print index, node.sockets[_].index
+
+
         # check if attribute is a socket in graph
         if node.sockets:
             sockets = [socket for socket in node.sockets if node.sockets[socket].index == index]
+            print sockets
             if sockets and len(sockets) != 1:
                 raise ValueError("Could not find socket to emit signal on creation")
             else:
@@ -685,7 +761,7 @@ class Nodegraph(Basegraph):
                 if socket:
                     self.graph.signal_node_socket_created.emit(node.sockets[socket])
         # and check if it is a plug in graph
-        if node.plugs_dict:
+        if node.plugs:
             plugs = [plug for plug in node.plugs_dict if node.plugs_dict[plug].index == index]
             if plugs and len(plugs) != 1:
                 raise ValueError("Could not find plug to emit signal on creation")
@@ -699,3 +775,12 @@ class Nodegraph(Basegraph):
 
     def on_plug_created(self, plug_item):
         pass
+
+    def on_slots_connect(self):
+        pass
+
+    def on_plug_connected(self, src_node_name, src_plug_name, destination_node_name, destination_socket_name):
+        print "aaaa", src_node_name, src_plug_name, destination_node_name, destination_socket_name
+
+    def on_socket_connected(self, src_node_name, src_plug_name, destination_node_name, destination_socket_name):
+        print "bbbb", src_node_name, src_plug_name, destination_node_name, destination_socket_name
