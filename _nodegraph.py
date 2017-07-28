@@ -224,7 +224,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     signal_host_node_created = QtCore.Signal(object)
     signal_node_plug_created = QtCore.Signal(object)
     signal_node_socket_created = QtCore.Signal(object)
-    signal_connection_created = QtCore.Signal(object, object)
+    signal_connection_made = QtCore.Signal(str, str, str, str)
     signal_about_attribute_create = QtCore.Signal(str, str)
     signal_context_request = QtCore.Signal(object)
     signal_creation_field_request = QtCore.Signal()
@@ -549,7 +549,7 @@ class Nodegraph(Basegraph):
         signal.disconnect(slot)
 
     def register_events(self):
-        """ setup all slots
+        """ setup events by connecting all signals and slots
 
         Returns:
 
@@ -667,6 +667,16 @@ class Nodegraph(Basegraph):
                                             self.on_plug_created
                                             )
                               )
+        self.events.add_event("connection_made",
+                              adder=self._connect_slot,
+                              adder_args=(self.graph.signal_connection_made,
+                                          self.on_connection_made
+                                          ),
+                              remover=self._disconnect_slot,
+                              remover_kwargs=(self.graph.signal_connection_made,
+                                              self.on_connection_made
+                                              )
+                              )
         self.events.add_event("plug_connected",
                               adder=self._connect_slot,
                               adder_args=(self.graph.signal_PlugConnected,
@@ -774,16 +784,18 @@ class Nodegraph(Basegraph):
         self.search_field.available_items = self.all_node_names
 
     def on_plug_created(self, plug_item):
-        print "plug created", plug_item
-
-    def on_socket_created(self, socket_item):
-        print "socket created", socket_item
-
-    def on_slots_connect(self):
         pass
 
-    def on_plug_connected(self, src_node_name, src_plug_name, destination_node_name, destination_socket_name):
-        print "aaaa", src_node_name, src_plug_name, destination_node_name, destination_socket_name
+    def on_socket_created(self, socket_item):
+        pass
 
-    def on_socket_connected(self, src_node_name, src_plug_name, destination_node_name, destination_socket_name):
-        print "bbbb", src_node_name, src_plug_name, destination_node_name, destination_socket_name
+    def on_connection_made(self, node_name1, slot_name1, node_name2, slot_name2):
+        pass
+
+    def on_plug_connected(self, source_node_name, source_plug_name, destination_node_name, destination_socket_name):
+        if destination_node_name and destination_socket_name:
+            self.graph.signal_connection_made.emit(source_node_name, source_plug_name, destination_node_name, destination_socket_name)
+
+    def on_socket_connected(self, source_node_name, source_plug_name, destination_node_name, destination_socket_name):
+        if source_node_name and source_plug_name:
+            self.graph.signal_connection_made.emit(source_node_name, source_plug_name, destination_node_name, destination_socket_name)
