@@ -104,7 +104,9 @@ class Basegraph(object):
 class NodeItem(nodz_main.NodeItem):
 
     signal_context_request = QtCore.Signal(object)
-    signal_attr_created = QtCore.Signal(object, int)
+    signal_attr_created = QtCore.Signal(object)
+    signal_socket_created = QtCore.Signal(object)
+    signal_plug_created = QtCore.Signal(object)
 
     def __init__(self, name, alternate, preset, config):
         super(NodeItem, self).__init__(name, alternate, preset, config)
@@ -166,6 +168,10 @@ class NodeItem(nodz_main.NodeItem):
 
         """
 
+        # skip process if slot already exists
+        if name in self.attrs:
+            return
+
         # closure to avoid redoing preset checking all the time
         def _do_creation():
             if data_type:
@@ -177,7 +183,12 @@ class NodeItem(nodz_main.NodeItem):
                 self._createAttribute(name, index, "datatype_default", plug, socket, data_type)
             else:
                 self._createAttribute(name, index, preset, plug, socket, data_type)
-            self.signal_attr_created.emit(self, index)
+
+            # emit specific signals
+            if plug:
+                self.signal_plug_created.emit(self.plugs[name])
+            if socket:
+                self.signal_socket_created.emit(self.sockets[name])
 
         # if no add_mode is defined take the order from the config
         if not add_mode:
@@ -341,6 +352,9 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         nodeItem = NodeItem(name=name, alternate=alternate, preset=preset,
                             config=self.configuration_data)
         nodeItem.signal_context_request.connect(self.on_context_request)
+        nodeItem.signal_plug_created.connect(self.on_plug_created)
+        nodeItem.signal_socket_created.connect(self.on_socket_created)
+
         # Store node in scene.
         self.scene().nodes[name] = nodeItem
 
@@ -366,6 +380,12 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         Returns:
 
         """
+        pass
+
+    def on_plug_created(self, plug_item):
+        pass
+
+    def on_socket_created(self, socket_item):
         pass
 
 
@@ -536,6 +556,8 @@ class Nodegraph(Basegraph):
         """
         # patching per node slot
         self.graph.on_context_request = self.on_context_request
+        self.graph.on_plug_created = self.on_plug_created
+        self.graph.on_socket_created = self.on_socket_created
 
         self.events.add_event("creation_field_request",
                               adder=self._connect_slot,
@@ -622,16 +644,8 @@ class Nodegraph(Basegraph):
                                           self.on_about_attribute_create),
                               remover=self._disconnect_slot,
                               remover_args=(self.graph.signal_about_attribute_create,
-                                            self.on_about_attribute_create)
-                              )
-        self.events.add_event("attribute_created",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_AttrCreated,
-                                          self.on_attribute_created
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_AttrCreated,
-                                            self.on_attribute_created)
+                                            self.on_about_attribute_create
+                                            )
                               )
         self.events.add_event("socket_created",
                               adder=self._connect_slot,
@@ -738,7 +752,7 @@ class Nodegraph(Basegraph):
 
     def on_about_attribute_create(self, node_name, attribute_name):
         node = self.get_node_by_name(node_name)
-        self.graph.createAttribute(node, name=attribute_name)
+        node.add_attribute(name=attribute_name)
 
     def on_host_node_created(self, node):
         """ allows us to modify the NodeItem when a corresponding host node was created
@@ -759,38 +773,11 @@ class Nodegraph(Basegraph):
     def on_search_field_opened(self):
         self.search_field.available_items = self.all_node_names
 
-    def on_attribute_created(self, node_name, index):
-        node = self.nodes_dict[node_name]
-
-        for _ in node.sockets:
-            print index, node.sockets[_].index
-
-
-        # check if attribute is a socket in graph
-        if node.sockets:
-            sockets = [socket for socket in node.sockets if node.sockets[socket].index == index]
-            print sockets
-            if sockets and len(sockets) != 1:
-                raise ValueError("Could not find socket to emit signal on creation")
-            else:
-                socket = sockets[0]
-                if socket:
-                    self.graph.signal_node_socket_created.emit(node.sockets[socket])
-        # and check if it is a plug in graph
-        if node.plugs:
-            plugs = [plug for plug in node.plugs_dict if node.plugs_dict[plug].index == index]
-            if plugs and len(plugs) != 1:
-                raise ValueError("Could not find plug to emit signal on creation")
-            else:
-                plug = plugs[0]
-                if plug:
-                    self.graph.signal_node_plug_created.emit(node.plugs_dict[plug])
+    def on_plug_created(self, plug_item):
+        print "plug created", plug_item
 
     def on_socket_created(self, socket_item):
-        pass
-
-    def on_plug_created(self, plug_item):
-        pass
+        print "socket created", socket_item
 
     def on_slots_connect(self):
         pass
