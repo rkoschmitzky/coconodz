@@ -14,6 +14,8 @@ from lib import BaseWindow
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 
+NODES = list(set(pmc.listNodeTypes("shader") + pmc.listNodeTypes("texture")))
+
 class MayaBaseWindow(MayaQWidgetDockableMixin, BaseWindow):
     """ getting the DockableMixin class in to provide all
     docking possibilities
@@ -27,7 +29,7 @@ class Nodzgraph(_nodegraph.Nodegraph):
     """ Maya Nodegraph widget implementation
 
     """
-    def __init__(self, parent=maya_main_window(), creation_items=pmc.listNodeTypes("shader")):
+    def __init__(self, parent=maya_main_window(), creation_items=NODES):
         super(Nodzgraph, self).__init__(parent, creation_items)
 
         # just providing docking features for Maya 2017 and newer
