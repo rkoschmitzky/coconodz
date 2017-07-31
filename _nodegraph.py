@@ -777,6 +777,19 @@ class Nodegraph(Basegraph):
         # create default plug on node
         node.add_attribute(name="message", socket=False, data_type="message")
 
+    def on_host_node_renamed(self, new_name, old_name):
+        node = self.get_node_by_name(old_name)
+        if node:
+            self.graph.editNode(node, new_name)
+
+    def on_host_nodes_selected(self, node_name):
+        node = self.get_node_by_name(node_name)
+        node.setSelected(True)
+
+    def on_host_node_deselected(self, node_name):
+        node = self.get_node_by_name(node_name)
+        node.setSelected(False)
+
     def on_host_node_deleted(self, node_name):
         pass
 

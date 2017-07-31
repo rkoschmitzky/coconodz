@@ -79,8 +79,15 @@ class Events(Singleton):
             except RuntimeError:
                 LOG.error('Failed to register callback.', exc_info=True)
 
-    def attach_remover(self, callable, callable_args=(), callable_kwargs={}):
-        raise NotImplementedError
+    def attach_remover(self, event_name, callable, callable_args=(), callable_kwargs={}):
+        assert event_name in self.registered_events, "No event named '{0}' registered".format(event_name)
+
+        data = self.data.copy()
+        data[event_name]["remover"] = callable
+        data[event_name]["remover_args"] = callable_args
+        data[event_name]["remover_kwargs"] = callable_kwargs
+
+        self.data = data
 
     def remove_event(self, event_name):
         """ base method to deregister an event

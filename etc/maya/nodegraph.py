@@ -6,6 +6,8 @@ from Qt import (QtWidgets,
 
 from etc.maya.qtutilities import maya_main_window
 from etc.maya import applib
+from etc.maya import callbacks
+
 reload(applib)
 import _nodegraph
 reload(_nodegraph)
@@ -46,6 +48,18 @@ class Nodzgraph(_nodegraph.Nodegraph):
                                     self.configuration.maya.area,
                                     self.configuration.maya.floating
                                     )
+
+    def register_events(self):
+        super(Nodzgraph, self).register_events()
+
+        self.events.add_event("host_node_name_changed",
+                               adder=callbacks.add_node_name_changed_callback,
+                               adder_args=(self.on_host_node_renamed, )
+                              )
+        self.events.attach_remover("host_node_name_changed",
+                                   callable=callbacks.remove_callback,
+                                   callable_args=(self.events.data["host_node_name_changed"]["id"], )
+                                   )
 
     def on_host_node_created(self, node):
         """ slot override
@@ -97,5 +111,3 @@ class Nodzgraph(_nodegraph.Nodegraph):
     def on_connection_made(self, node_name1, slot_name1, node_name2, slot_name2):
 
         pmc.PyNode("{0}.{1}".format(node_name1, slot_name1)) >> pmc.PyNode("{0}.{1}".format(node_name2, slot_name2))
-
-
