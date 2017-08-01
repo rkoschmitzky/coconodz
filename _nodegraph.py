@@ -751,9 +751,8 @@ class Nodegraph(Basegraph):
         """
         self.graph.create_node(node_type, node_type=node_type)
 
-    def on_node_created(self, node):
-        if node:
-            self.graph.signal_after_node_created.emit(node)
+    def on_search_field_opened(self):
+        self.search_field.available_items = self.all_node_names
 
     def on_search_input_accepted(self, node_name):
         """ selects and focus the node by the given name from the searchfield
@@ -772,9 +771,35 @@ class Nodegraph(Basegraph):
         self.graph.attribute_context.close()
         self.graph.signal_about_attribute_create.emit(node_name, attribute_name)
 
+    def on_node_created(self, node):
+        if node:
+            self.graph.signal_after_node_created.emit(node)
+
+    def on_after_node_created(self, node):
+        # create default plug on node
+        node.add_attribute(name="test", data_type="test")
+
     def on_about_attribute_create(self, node_name, attribute_name):
         node = self.get_node_by_name(node_name)
-        node.add_attribute(name=attribute_name)
+        if node:
+            node.add_attribute(name=attribute_name)
+
+    def on_plug_created(self, plug_item):
+        pass
+
+    def on_socket_created(self, socket_item):
+        pass
+
+    def on_connection_made(self, node_name1, slot_name1, node_name2, slot_name2):
+        pass
+
+    def on_plug_connected(self, source_node_name, source_plug_name, destination_node_name, destination_socket_name):
+        if destination_node_name and destination_socket_name:
+            self.graph.signal_connection_made.emit(source_node_name, source_plug_name, destination_node_name, destination_socket_name)
+
+    def on_socket_connected(self, source_node_name, source_plug_name, destination_node_name, destination_socket_name):
+        if source_node_name and source_plug_name:
+            self.graph.signal_connection_made.emit(source_node_name, source_plug_name, destination_node_name, destination_socket_name)
 
     def on_host_node_created(self, node_name, node_type):
         node = self.get_node_by_name(node_name)
@@ -785,10 +810,6 @@ class Nodegraph(Basegraph):
                         "Expected nodetype '{0}' got '{1}'".format(node.node_type, node_type))
         else:
             self.graph.create_node(name=node_name, node_type=node_type)
-
-    def on_after_node_created(self, node):
-        # create default plug on node
-        node.add_attribute(name="test", data_type="test")
 
     def on_host_node_deleted(self, node_name):
         node = self.get_node_by_name(node_name)
@@ -808,22 +829,29 @@ class Nodegraph(Basegraph):
         node = self.get_node_by_name(node_name)
         node.setSelected(False)
 
-    def on_search_field_opened(self):
-        self.search_field.available_items = self.all_node_names
+    def __handle_connection(self, source_node_name, source_plug_name, destination_node_name, destination_socket_name, state):
+        source_node = self.get_node_by_name(source_node_name)
+        destination_node = self.get_node_by_name(destination_node_name)
 
-    def on_plug_created(self, plug_item):
-        pass
+        if source_node and destination_node:
+            if source_plug_name in source_node.plugs:
+                source_plug = source_node.plugs[source_plug_name]
+            else:
+                source_plug = None
+            if destination_node_name in destination_node.plugs:
+                destination_socket = destination_node.plugs[destination_socket_name]
+            else:
+                destination_socket = None
+            if source_plug and destination_socket:
+                if state:
+                    # connect
+                    pass
+                else:
+                    # disconnect
+                    pass
 
-    def on_socket_created(self, socket_item):
-        pass
+    def on_host_connection_made(self, source_node_name, source_plug_name, destination_node_name, destination_socket_name):
+        self.__handle_connection(source_node_name, source_plug_name, destination_node_name, destination_socket_name, 1)
 
-    def on_connection_made(self, node_name1, slot_name1, node_name2, slot_name2):
-        pass
-
-    def on_plug_connected(self, source_node_name, source_plug_name, destination_node_name, destination_socket_name):
-        if destination_node_name and destination_socket_name:
-            self.graph.signal_connection_made.emit(source_node_name, source_plug_name, destination_node_name, destination_socket_name)
-
-    def on_socket_connected(self, source_node_name, source_plug_name, destination_node_name, destination_socket_name):
-        if source_node_name and source_plug_name:
-            self.graph.signal_connection_made.emit(source_node_name, source_plug_name, destination_node_name, destination_socket_name)
+    def on_host_disconnection_made(self, source_node_name, source_plug_name, destination_node_name, destination_socket_name):
+        self.__handle_connection(source_node_name, source_plug_name, destination_node_name, destination_socket_name, 0)

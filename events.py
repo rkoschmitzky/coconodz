@@ -89,7 +89,7 @@ class Events(Singleton):
 
         self.data = data
 
-    def remove_event(self, event_name):
+    def remove_event(self, event_name, restore_on_fail=False):
         """ base method to deregister an event
 
         Args:
@@ -101,6 +101,10 @@ class Events(Singleton):
         Returns:
 
         """
+
+        if restore_on_fail:
+            raise NotImplementedError
+
         data_copy = self.data.copy()
         if event_name in self.data.keys():
             assert self.data[event_name]["remover"], "No event remover callable attached"
@@ -118,4 +122,8 @@ class Events(Singleton):
         raise NotImplementedError
 
     def remove_all_events(self):
-        raise NotImplementedError
+        for event in self.registered_events:
+            assert self.data[event]["remover"], "No remover attached for event '{0}'. Skipped process".format(event)
+
+        for event in self.registered_events:
+            self.remove_event(event)

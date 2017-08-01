@@ -9,6 +9,7 @@ from etc.maya import applib
 from etc.maya import callbacks
 
 reload(applib)
+reload(callbacks)
 import _nodegraph
 reload(_nodegraph)
 from lib import BaseWindow
@@ -75,6 +76,22 @@ class Nodzgraph(_nodegraph.Nodegraph):
         self.events.attach_remover("host_node_deleted",
                                    callable=callbacks.remove_callback,
                                    callable_args=(self.events.data["host_node_deleted"]["id"])
+                                   )
+        self.events.add_event("host_connection_made",
+                              adder=callbacks.add_connection_made_callback,
+                              adder_args=(self.on_host_connection_made, )
+                              )
+        self.events.attach_remover("host_connection_made",
+                                   callable=callbacks.remove_callback,
+                                   callable_args=(self.events.data["host_connection_made"]["id"])
+                                   )
+        self.events.add_event("host_disconnection_made",
+                              adder=callbacks.add_disconnection_made_callback,
+                              adder_args=(self.on_host_disconnection_made, )
+                              )
+        self.events.attach_remover("host_disconnection_made",
+                                   callable=callbacks.remove_callback,
+                                   callable_args=(self.events.data["host_disconnection_made"]["id"])
                                    )
 
     def on_creation_input_accepted(self, node_type):
