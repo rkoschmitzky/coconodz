@@ -60,24 +60,28 @@ class Nodzgraph(_nodegraph.Nodegraph):
                                    callable=callbacks.remove_callback,
                                    callable_args=(self.events.data["host_node_name_changed"]["id"], )
                                    )
+        self.events.add_event("host_node_created",
+                              adder=callbacks.add_node_created_callback,
+                              adder_args=(self.on_host_node_created, )
+                              )
+        self.events.attach_remover("host_node_created",
+                                   callable=callbacks.remove_callback,
+                                   callable_args=(self.events.data["host_node_created"]["id"])
+                                   )
+        self.events.add_event("host_node_deleted",
+                              adder=callbacks.add_node_deleted_callback,
+                              adder_args=(self.on_host_node_deleted, )
+                              )
+        self.events.attach_remover("host_node_deleted",
+                                   callable=callbacks.remove_callback,
+                                   callable_args=(self.events.data["host_node_deleted"]["id"])
+                                   )
 
-    def on_host_node_created(self, node):
-        """ slot override
+    def on_creation_input_accepted(self, node_type):
+        pmc.createNode(node_type)
 
-        This adds a maya node of the given node type and renames the
-        corresponding nodegraph node
-
-        Args:
-            node: NodeItem
-            node_type: maya node type
-
-        Returns:
-
-        """
-        host_node = pmc.createNode(node.node_type)
-        self.graph.editNode(node, newName=host_node.name())
-
-        super(Nodzgraph, self).on_host_node_created(node)
+    def on_after_node_created(self, node):
+        node.add_attribute(name="message", socket=False, data_type="message")
 
     def on_context_request(self, widget):
         _widget = super(Nodzgraph, self).on_context_request(widget)

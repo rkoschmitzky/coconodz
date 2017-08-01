@@ -15,3 +15,22 @@ def add_node_name_changed_callback(callable):
 
     return om.MNodeMessage.addNameChangedCallback(om.MObject(), _get_names)
 
+
+def add_node_deleted_callback(callable):
+
+    def _get_name(node, clientData):
+        node_name = pmc.PyNode(node).name()
+        result = callable(node_name)
+        return result
+
+    return om.MDGMessage.addNodeRemovedCallback(_get_name)
+
+
+def add_node_created_callback(callable):
+
+    def _get_name_and_type(node, clientData):
+        node = pmc.PyNode(node)
+        result = callable(node.name(), node.nodeType())
+        return result
+
+    return om.MDGMessage.addNodeAddedCallback(_get_name_and_type)

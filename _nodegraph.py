@@ -221,7 +221,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     """
 
     signal_node_created = QtCore.Signal(object)
-    signal_host_node_created = QtCore.Signal(object)
+    signal_after_node_created = QtCore.Signal(object)
     signal_node_plug_created = QtCore.Signal(object)
     signal_node_socket_created = QtCore.Signal(object)
     signal_connection_made = QtCore.Signal(str, str, str, str)
@@ -335,6 +335,8 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
             LOG.info("Node preset for type {0} not configured.".format(node_type))
             node = self.createNode(name, position=position, alternate=alternate)
         node.node_type = node_type
+
+        self.signal_node_created.emit(node)
         return node
 
     def createNode(self, name="default", preset="node_default", position=None, alternate=True, node_type="default"):
@@ -367,7 +369,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         nodeItem.setPos(position - nodeItem.nodeCenter)
 
         # Emit signal.
-        self.signal_node_created.emit(self)
+        self.signal_NodeCreated.emit(name)
 
         return nodeItem
 
@@ -628,14 +630,22 @@ class Nodegraph(Basegraph):
                                             self.on_attribute_input_accepted
                                             )
                               )
-        self.events.add_event("host_node_created",
+        self.events.add_event("node_created",
                               adder=self._connect_slot,
-                              adder_args=(self.graph.signal_host_node_created,
-                                          self.on_host_node_created
+                              adder_args=(self.graph.signal_node_created,
+                                          self.on_node_created),
+                              remover=self._disconnect_slot,
+                              remover_args=(self.graph.signal_node_created,
+                                            self.on_node_created)
+                              )
+        self.events.add_event("after_node_created",
+                              adder=self._connect_slot,
+                              adder_args=(self.graph.signal_after_node_created,
+                                          self.on_after_node_created
                                           ),
                               remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_host_node_created,
-                                            self.on_host_node_created
+                              remover_args=(self.graph.signal_after_node_created,
+                                            self.on_after_node_created
                                             )
                               )
         self.events.add_event("about_attribute_create",
@@ -739,9 +749,11 @@ class Nodegraph(Basegraph):
         Returns:
 
         """
-        # find out if there is a configuration for this node type
-        node = self.graph.create_node(node_type, node_type=node_type)
-        self.graph.signal_host_node_created.emit(node)
+        self.graph.create_node(node_type, node_type=node_type)
+
+    def on_node_created(self, node):
+        if node:
+            self.graph.signal_after_node_created.emit(node)
 
     def on_search_input_accepted(self, node_name):
         """ selects and focus the node by the given name from the searchfield
@@ -764,18 +776,24 @@ class Nodegraph(Basegraph):
         node = self.get_node_by_name(node_name)
         node.add_attribute(name=attribute_name)
 
-    def on_host_node_created(self, node):
-        """ allows us to modify the NodeItem when a corresponding host node was created
+    def on_host_node_created(self, node_name, node_type):
+        node = self.get_node_by_name(node_name)
+        if node and node.node_type == node_type:
+            self.graph.editNode(node, node_name)
+        elif node and node_type != node_type:
+            LOG.warning("Host node misstmatch to graph node." +
+                        "Expected nodetype '{0}' got '{1}'".format(node.node_type, node_type))
+        else:
+            self.graph.create_node(name=node_name, node_type=node_type)
 
-        Args:
-            node: NodeItem
-            node_type: original node type of equally host node object
-
-        Returns:
-
-        """
+    def on_after_node_created(self, node):
         # create default plug on node
-        node.add_attribute(name="message", socket=False, data_type="message")
+        node.add_attribute(name="test", data_type="test")
+
+    def on_host_node_deleted(self, node_name):
+        node = self.get_node_by_name(node_name)
+        if node:
+            self.graph.deleteNode(node)
 
     def on_host_node_renamed(self, new_name, old_name):
         node = self.get_node_by_name(old_name)
@@ -789,9 +807,6 @@ class Nodegraph(Basegraph):
     def on_host_node_deselected(self, node_name):
         node = self.get_node_by_name(node_name)
         node.setSelected(False)
-
-    def on_host_node_deleted(self, node_name):
-        pass
 
     def on_search_field_opened(self):
         self.search_field.available_items = self.all_node_names
