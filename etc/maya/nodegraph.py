@@ -53,6 +53,17 @@ class Nodzgraph(_nodegraph.Nodegraph):
     def register_events(self):
         super(Nodzgraph, self).register_events()
 
+        self.events.add_event("ShadingEngine_template_hook",
+                              adder=pmc.callbacks,
+                              adder_kwargs={"addCallback": callbacks.add_template_custom_content,
+                                            "hook": "AETemplateCustomContent",
+                                             "owner": "coconodz"
+                                            },
+                              remover=pmc.callbacks,
+                              remover_kwargs={"removeCallback": callbacks.add_template_custom_content,
+                                              "hook": "AETemplateCustomContent",
+                                              "owner": "coconodz"}
+                          )
         self.events.add_event("host_node_name_changed",
                                adder=callbacks.add_node_name_changed_callback,
                                adder_args=(self.on_host_node_renamed, )
@@ -67,7 +78,7 @@ class Nodzgraph(_nodegraph.Nodegraph):
                               )
         self.events.attach_remover("host_node_created",
                                    callable=callbacks.remove_callback,
-                                   callable_args=(self.events.data["host_node_created"]["id"])
+                                   callable_args=(self.events.data["host_node_created"]["id"], )
                                    )
         self.events.add_event("host_node_deleted",
                               adder=callbacks.add_node_deleted_callback,
@@ -75,7 +86,7 @@ class Nodzgraph(_nodegraph.Nodegraph):
                               )
         self.events.attach_remover("host_node_deleted",
                                    callable=callbacks.remove_callback,
-                                   callable_args=(self.events.data["host_node_deleted"]["id"])
+                                   callable_args=(self.events.data["host_node_deleted"]["id"], )
                                    )
         self.events.add_event("host_connection_made",
                               adder=callbacks.add_connection_made_callback,
@@ -83,7 +94,7 @@ class Nodzgraph(_nodegraph.Nodegraph):
                               )
         self.events.attach_remover("host_connection_made",
                                    callable=callbacks.remove_callback,
-                                   callable_args=(self.events.data["host_connection_made"]["id"])
+                                   callable_args=(self.events.data["host_connection_made"]["id"], )
                                    )
         self.events.add_event("host_disconnection_made",
                               adder=callbacks.add_disconnection_made_callback,
@@ -91,7 +102,7 @@ class Nodzgraph(_nodegraph.Nodegraph):
                               )
         self.events.attach_remover("host_disconnection_made",
                                    callable=callbacks.remove_callback,
-                                   callable_args=(self.events.data["host_disconnection_made"]["id"])
+                                   callable_args=(self.events.data["host_disconnection_made"]["id"], )
                                    )
 
     def on_creation_input_accepted(self, node_type):

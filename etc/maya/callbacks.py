@@ -1,6 +1,8 @@
 import maya.OpenMaya as om
 import pymel.core as pmc
 
+from etc.maya.ae.hooks import AEHook
+
 
 def remove_callback(callback_id):
     om.MDGMessage.removeCallback(callback_id)
@@ -65,3 +67,7 @@ def add_disconnection_made_callback(callable):
             return result
 
     return om.MDGMessage.addConnectionCallback(_get_plugs_and_status)
+
+
+def add_template_custom_content(nodeName):
+    AEHook(nodeName)

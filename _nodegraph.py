@@ -683,9 +683,9 @@ class Nodegraph(Basegraph):
                                           self.on_connection_made
                                           ),
                               remover=self._disconnect_slot,
-                              remover_kwargs=(self.graph.signal_connection_made,
+                              remover_args=(self.graph.signal_connection_made,
                                               self.on_connection_made
-                                              )
+                                            )
                               )
         self.events.add_event("plug_connected",
                               adder=self._connect_slot,
@@ -693,9 +693,9 @@ class Nodegraph(Basegraph):
                                           self.on_plug_connected
                                           ),
                               remover=self._disconnect_slot,
-                              remover_kwargs=(self.graph.signal_PlugConnected,
+                              remover_args=(self.graph.signal_PlugConnected,
                                               self.on_plug_connected
-                                              )
+                                            )
                               )
         self.events.add_event("socket_connected",
                               adder=self._connect_slot,
@@ -703,9 +703,9 @@ class Nodegraph(Basegraph):
                                           self.on_socket_connected
                                           ),
                               remover=self._disconnect_slot,
-                              remover_kwargs=(self.graph.signal_SocketConnected,
-                                              self.on_socket_connected
-                                              )
+                              remover_args=(self.graph.signal_SocketConnected,
+                                            self.on_socket_connected
+                                            )
                               )
 
     def on_creation_field_request(self):
@@ -838,14 +838,13 @@ class Nodegraph(Basegraph):
                 source_plug = source_node.plugs[source_plug_name]
             else:
                 source_plug = None
-            if destination_node_name in destination_node.plugs:
+            if destination_socket_name in destination_node.sockets:
                 destination_socket = destination_node.plugs[destination_socket_name]
             else:
                 destination_socket = None
             if source_plug and destination_socket:
                 if state:
-                    # connect
-                    pass
+                    self.graph.createConnection(source_node_name, source_plug_name, destination_node_name, destination_socket_name)
                 else:
                     # disconnect
                     pass
