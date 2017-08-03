@@ -58,6 +58,25 @@ class Basegraph(object):
         if node_name in self.nodes_dict:
             return self.nodes_dict[node_name]
 
+    def get_slot_by_name(self, slot_name, plug_or_socket):
+        node = self.get_node_by_name(slot_name.split(".")[0])
+        name = slot_name.split(".", 1)[1]
+        if node:
+            if plug_or_socket == "plug":
+                if name in node.plugs:
+                    return node.plugs[name]
+            elif plug_or_socket == "socket":
+                if name in node.sockets:
+                    return node.sockets[name]
+            else:
+                raise NotImplementedError
+
+    def get_plug_by_name(self, plug_name):
+        return self.get_slot_by_name(plug_name, "plug")
+
+    def get_socket_by_name(self, socket_name):
+        return self.get_slot_by_name(socket_name, "socket")
+
     def on_node_name_changed(self, old_name, new_name):
         raise NotImplementedError
 
@@ -372,6 +391,29 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         self.signal_NodeCreated.emit(name)
 
         return nodeItem
+
+    def connect_attributes(self, plug, socket):
+        self.createConnection(plug, socket)
+
+    def createConnection(self, plug, socket):
+        connection = nodz_main.ConnectionItem(plug.center(), socket.center(), plug, socket)
+
+        connection.plugNode = plug.parentItem().name
+        connection.plugAttr = plug.attribute
+        connection.socketNode = socket.parentItem().name
+        connection.socketAttr = socket.attribute
+
+        plug.connect(socket, connection)
+        socket.connect(plug, connection)
+
+        connection.updatePath()
+
+        self.scene().addItem(connection)
+
+        return connection
+
+    def disconnect_attributes(self, plug, socket):
+        pass
 
     def on_context_request(self, node_item):
         """ placeholder method, has to be overriden in Nodegraphclass
@@ -829,28 +871,19 @@ class Nodegraph(Basegraph):
         node = self.get_node_by_name(node_name)
         node.setSelected(False)
 
-    def __handle_connection(self, source_node_name, source_plug_name, destination_node_name, destination_socket_name, state):
-        source_node = self.get_node_by_name(source_node_name)
-        destination_node = self.get_node_by_name(destination_node_name)
+    def __handle_connection(self, plug_name, socket_name, state):
 
-        if source_node and destination_node:
-            if source_plug_name in source_node.plugs:
-                source_plug = source_node.plugs[source_plug_name]
+        plug = self.get_plug_by_name(plug_name)
+        socket = self.get_socket_by_name(socket_name)
+        if plug and socket:
+            if state:
+                self.graph.connect_attributes(plug, socket)
             else:
-                source_plug = None
-            if destination_socket_name in destination_node.sockets:
-                destination_socket = destination_node.plugs[destination_socket_name]
-            else:
-                destination_socket = None
-            if source_plug and destination_socket:
-                if state:
-                    self.graph.createConnection(source_node_name, source_plug_name, destination_node_name, destination_socket_name)
-                else:
-                    # disconnect
-                    pass
+                # disconnect
+                pass
 
-    def on_host_connection_made(self, source_node_name, source_plug_name, destination_node_name, destination_socket_name):
-        self.__handle_connection(source_node_name, source_plug_name, destination_node_name, destination_socket_name, 1)
+    def on_host_connection_made(self, plug_name, socket_name):
+        self.__handle_connection(plug_name, socket_name, 1)
 
-    def on_host_disconnection_made(self, source_node_name, source_plug_name, destination_node_name, destination_socket_name):
-        self.__handle_connection(source_node_name, source_plug_name, destination_node_name, destination_socket_name, 0)
+    def on_host_disconnection_made(self, plug_name, socket_name):
+        self.__handle_connection(plug_name, socket_name, 0)

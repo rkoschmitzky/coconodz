@@ -40,33 +40,26 @@ def add_node_created_callback(callable):
 
 def add_connection_made_callback(callable):
 
-    def _get_plugs_and_status(srcPlug, destPlug, made, clientData):
+    def _get_plug_names(srcPlug, destPlug, made, clientData):
         src_plug = pmc.PyNode(srcPlug)
         dest_plug = pmc.PyNode(destPlug)
         if made:
-            result = callable(src_plug.node().name(),
-                              src_plug.longName(),
-                              dest_plug.node().name(),
-                              dest_plug.longName())
+            result = callable(src_plug.name(), dest_plug.name())
             return result
 
-    return om.MDGMessage.addConnectionCallback(_get_plugs_and_status)
+    return om.MDGMessage.addConnectionCallback(_get_plug_names)
 
 
 def add_disconnection_made_callback(callable):
 
-    def _get_plugs_and_status(srcPlug, destPlug, made, clientData):
+    def _get_plug_names(srcPlug, destPlug, made, clientData):
         src_plug = pmc.PyNode(srcPlug)
         dest_plug = pmc.PyNode(destPlug)
-        connected = made
         if not made:
-            result = callable(src_plug.node().name(),
-                              src_plug.longName(),
-                              dest_plug.node().name(),
-                              dest_plug.longName())
+            result = callable(src_plug.name(), dest_plug.name())
             return result
 
-    return om.MDGMessage.addConnectionCallback(_get_plugs_and_status)
+    return om.MDGMessage.addConnectionCallback(_get_plug_names)
 
 
 def add_template_custom_content(nodeName):
