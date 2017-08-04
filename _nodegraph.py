@@ -190,7 +190,7 @@ class NodeItem(nodz_main.NodeItem):
                 self.plugs[name].node = self.plugs[name].parentItem()
                 self.signal_plug_created.emit(self.plugs[name])
             if socket:
-                self.signal[name].node = self.signal[name].parentItem()
+                self.sockets[name].node = self.sockets[name].parentItem()
                 self.signal_socket_created.emit(self.sockets[name])
 
         # if no add_mode is defined take the order from the config
@@ -377,7 +377,16 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         return nodeItem
 
     def connect_attributes(self, plug, socket):
-        self.createConnection(plug, socket)
+        connection = self.createConnection(plug, socket)
+        # storing connections directly on plug and socket
+        if not hasattr(plug, "connections"):
+            plug.connections = connection
+        else:
+            plug.connections.append(connection)
+        if not hasattr(socket, "connections"):
+            socket.connections = connection
+        else:
+            socket.connections.append(connection)
 
     def createConnection(self, plug, socket):
         connection = nodz_main.ConnectionItem(plug.center(), socket.center(), plug, socket)
