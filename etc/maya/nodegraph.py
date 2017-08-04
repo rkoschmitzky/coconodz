@@ -141,5 +141,6 @@ class Nodzgraph(_nodegraph.Nodegraph):
         node.add_attribute(attribute_name, data_type=attribute_type)
 
     def on_connection_made(self, node_name1, slot_name1, node_name2, slot_name2):
-
-        pmc.PyNode("{0}.{1}".format(node_name1, slot_name1)) >> pmc.PyNode("{0}.{1}".format(node_name2, slot_name2))
+        slot1 = pmc.PyNode("{0}.{1}".format(node_name1, slot_name1))
+        slot2 = pmc.PyNode("{0}.{1}".format(node_name2, slot_name2))
+        slot1 >> slot2

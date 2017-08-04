@@ -188,11 +188,9 @@ class NodeItem(nodz_main.NodeItem):
             # emit specific signals
             if plug:
                 self.plugs[name].node = self.plugs[name].parentItem()
-                self.plugs[name].connections = []
                 self.signal_plug_created.emit(self.plugs[name])
             if socket:
                 self.sockets[name].node = self.sockets[name].parentItem()
-                self.sockets[name].connections = []
                 self.signal_socket_created.emit(self.sockets[name])
 
         # if no add_mode is defined take the order from the config
@@ -381,8 +379,8 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     def connect_attributes(self, plug, socket):
         connection = self.createConnection(plug, socket)
         # storing connections directly on plug and socket
-        plug.connections.append(connection)
-        socket.connections.append(connection)
+        #plug.connections.append(connection)
+        #socket.connections.append(connection)
 
     def createConnection(self, plug, socket):
         connection = nodz_main.ConnectionItem(plug.center(), socket.center(), plug, socket)
@@ -401,7 +399,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         return connection
 
-    def get_connection(self, plug, socket):
+    def get_shared_connection(self, plug, socket):
         all_connections = plug.connections + socket.connections
         shared_connections = list(set(all_connections))
         if shared_connections:
@@ -411,7 +409,9 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
                 return shared_connections[0]
 
     def disconnect_attributes(self, plug, socket):
-        pass
+        connection = self.get_shared_connection(plug, socket)
+        if connection:
+            connection._remove()
 
     def on_context_request(self, node_item):
         """ placeholder method, has to be overriden in Nodegraphclass
@@ -877,8 +877,7 @@ class Nodegraph(Basegraph):
             if state:
                 self.graph.connect_attributes(plug, socket)
             else:
-                # disconnect
-                pass
+                self.graph.disconnect_attributes(plug, socket)
 
     def on_host_connection_made(self, plug_name, socket_name):
         self.__handle_connection(plug_name, socket_name, 1)
