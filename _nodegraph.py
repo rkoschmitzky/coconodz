@@ -401,6 +401,15 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         return connection
 
+    def get_connection(self, plug, socket):
+        all_connections = plug.connections + socket.connections
+        shared_connections = list(set(all_connections))
+        if shared_connections:
+            if len(shared_connections) != 1:
+                LOG.error("Multiple shared connections on plug '{0}' and socket '{1}'".format(plug, socket))
+            else:
+                return shared_connections[0]
+
     def disconnect_attributes(self, plug, socket):
         pass
 
