@@ -147,24 +147,6 @@ class NodeItem(nodz_main.NodeItem):
         assert isinstance(value, basestring)
         self._node_type = value
 
-    @property
-    def plugs_dict(self):
-        return self._plugs_dict
-
-    @plugs_dict.setter
-    def plugs_dict(self, plugs_dict):
-        assert isinstance(plugs_dict, dict)
-        self._plugs_dict = plugs_dict
-
-    @property
-    def sockets_dict(self):
-        return self._sockets_dict
-
-    @sockets_dict.setter
-    def sockets_dict(self, sockets_dict):
-        assert isinstance(sockets_dict, dict)
-        self._sockets_dict = sockets_dict
-
     def mousePressEvent(self, event):
         if (event.button() == QtCore.Qt.RightButton and
             event.modifiers() == QtCore.Qt.ControlModifier):
@@ -205,8 +187,10 @@ class NodeItem(nodz_main.NodeItem):
 
             # emit specific signals
             if plug:
+                self.plugs[name].node = self.plugs[name].parentItem()
                 self.signal_plug_created.emit(self.plugs[name])
             if socket:
+                self.signal[name].node = self.signal[name].parentItem()
                 self.signal_socket_created.emit(self.sockets[name])
 
         # if no add_mode is defined take the order from the config
