@@ -1,8 +1,7 @@
+import logging
+
 import pymel.core as pmc
-from Qt import (QtWidgets,
-                QtGui,
-                QtCore
-                )
+from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 from etc.maya.qtutilities import maya_main_window
 from etc.maya import applib
@@ -12,11 +11,12 @@ reload(applib)
 reload(callbacks)
 import _nodegraph
 reload(_nodegraph)
+
 from lib import BaseWindow
 
-from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
-
+LOG = logging.getLogger(name="CocoNodz.maya.nodegraph")
+# todo add allowed nodetypes to configuration
 NODES = list(set(pmc.listNodeTypes("shader") + pmc.listNodeTypes("texture")))
 
 class MayaBaseWindow(MayaQWidgetDockableMixin, BaseWindow):
@@ -144,3 +144,10 @@ class Nodzgraph(_nodegraph.Nodegraph):
         slot1 = pmc.PyNode("{0}.{1}".format(node_name1, slot_name1))
         slot2 = pmc.PyNode("{0}.{1}".format(node_name2, slot_name2))
         slot1 >> slot2
+
+    def on_nodes_deleted(self, nodeitems_list):
+        for node in nodeitems_list:
+            try:
+                pmc.delete(node.name)
+            except:
+                LOG.warning("Not able to delete host node '{0}'".format(node.name), exc_info=True)

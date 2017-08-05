@@ -224,6 +224,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     """
 
     signal_node_created = QtCore.Signal(object)
+    signal_nodes_deleted = QtCore.Signal(object)
     signal_after_node_created = QtCore.Signal(object)
     signal_node_plug_created = QtCore.Signal(object)
     signal_node_socket_created = QtCore.Signal(object)
@@ -328,6 +329,10 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         super(Nodz, self).mousePressEvent(event)
 
+    def _deleteSelectedNodes(self):
+        self.signal_nodes_deleted.emit([_ for _ in self.scene().selectedItems() if isinstance(_, NodeItem)])
+        super(Nodz, self)._deleteSelectedNodes()
+
     def create_node(self, name, position=None, alternate=False, node_type="default"):
 
         _ = "node_{0}".format(node_type)
@@ -378,9 +383,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
     def connect_attributes(self, plug, socket):
         connection = self.createConnection(plug, socket)
-        # storing connections directly on plug and socket
-        #plug.connections.append(connection)
-        #socket.connections.append(connection)
+        return connection
 
     def createConnection(self, plug, socket):
         connection = nodz_main.ConnectionItem(plug.center(), socket.center(), plug, socket)
@@ -688,6 +691,16 @@ class Nodegraph(Basegraph):
                                             self.on_after_node_created
                                             )
                               )
+        self.events.add_event("node_deleted",
+                              adder=self._connect_slot,
+                              adder_args=(self.graph.signal_nodes_deleted,
+                                          self.on_nodes_deleted
+                                          ),
+                              remover=self._disconnect_slot,
+                              remover_args=(self.graph.signal_nodes_deleted,
+                                            self.on_nodes_deleted
+                                            )
+                              )
         self.events.add_event("about_attribute_create",
                               adder=self._connect_slot,
                               adder_args=(self.graph.signal_about_attribute_create,
@@ -818,6 +831,9 @@ class Nodegraph(Basegraph):
     def on_after_node_created(self, node):
         # create default plug on node
         node.add_attribute(name="test", data_type="test")
+
+    def on_nodes_deleted(self, nodeitems_list):
+        pass
 
     def on_about_attribute_create(self, node_name, attribute_name):
         node = self.get_node_by_name(node_name)
