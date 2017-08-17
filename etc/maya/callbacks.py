@@ -7,6 +7,12 @@ from etc.maya.ae.hooks import AEHook
 def remove_callback(callback_id):
     om.MDGMessage.removeCallback(callback_id)
 
+def remove_callbacks_only(id_list):
+    # expect a list, loop through it and remove all callbacks
+    # using the proper callback ids
+    for item in id_list:
+        if str(type(item)) == "<type 'PyCObject'>":
+            remove_callback(item)
 
 def add_node_name_changed_callback(callable):
 
