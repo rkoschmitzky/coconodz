@@ -53,6 +53,7 @@ class Nodzgraph(_nodegraph.Nodegraph):
     def register_events(self):
         super(Nodzgraph, self).register_events()
 
+        # @todo remove boilerplate
         self.events.add_event("ShadingEngine_template_hook",
                               adder=pmc.callbacks,
                               adder_kwargs={"addCallback": callbacks.add_template_custom_content,
@@ -69,41 +70,41 @@ class Nodzgraph(_nodegraph.Nodegraph):
                               adder_args=(self.on_host_node_renamed, )
                               )
         self.events.attach_remover("host_node_name_changed",
-                                   callable=callbacks.remove_callback,
+                                   callable=callbacks.remove_callbacks_only,
                                    callable_args=(self.events.data["host_node_name_changed"]["id_list"], )
                                    )
-        # self.events.add_event("host_node_created",
-        #                       adder=callbacks.add_node_created_callback,
-        #                       adder_args=(self.on_host_node_created, )
-        #                       )
-        # self.events.attach_remover("host_node_created",
-        #                            callable=callbacks.remove_callback,
-        #                            callable_args=(self.events.data["host_node_created"]["id"], )
-        #                            )
-        # self.events.add_event("host_node_deleted",
-        #                       adder=callbacks.add_node_deleted_callback,
-        #                       adder_args=(self.on_host_node_deleted, )
-        #                       )
-        # self.events.attach_remover("host_node_deleted",
-        #                            callable=callbacks.remove_callback,
-        #                            callable_args=(self.events.data["host_node_deleted"]["id"], )
-        #                            )
-        # self.events.add_event("host_connection_made",
-        #                       adder=callbacks.add_connection_made_callback,
-        #                       adder_args=(self.on_host_connection_made, )
-        #                       )
-        # self.events.attach_remover("host_connection_made",
-        #                            callable=callbacks.remove_callback,
-        #                            callable_args=(self.events.data["host_connection_made"]["id"], )
-        #                            )
-        # self.events.add_event("host_disconnection_made",
-        #                       adder=callbacks.add_disconnection_made_callback,
-        #                       adder_args=(self.on_host_disconnection_made, )
-        #                       )
-        # self.events.attach_remover("host_disconnection_made",
-        #                            callable=callbacks.remove_callback,
-        #                            callable_args=(self.events.data["host_disconnection_made"]["id"], )
-        #                            )
+        self.events.add_event("host_node_created",
+                              adder=callbacks.add_node_created_callback,
+                              adder_args=(self.on_host_node_created, )
+                              )
+        self.events.attach_remover("host_node_created",
+                                   callable=callbacks.remove_callbacks_only,
+                                   callable_args=(self.events.data["host_node_created"]["id_list"], )
+                                   )
+        self.events.add_event("host_node_deleted",
+                              adder=callbacks.add_node_deleted_callback,
+                              adder_args=(self.on_host_node_deleted, )
+                              )
+        self.events.attach_remover("host_node_deleted",
+                                   callable=callbacks.remove_callbacks_only,
+                                   callable_args=(self.events.data["host_node_deleted"]["id_list"], )
+                                   )
+        self.events.add_event("host_connection_made",
+                              adder=callbacks.add_connection_made_callback,
+                              adder_args=(self.on_host_connection_made, )
+                              )
+        self.events.attach_remover("host_connection_made",
+                                   callable=callbacks.remove_callbacks_only,
+                                   callable_args=(self.events.data["host_connection_made"]["id_list"], )
+                                   )
+        self.events.add_event("host_disconnection_made",
+                              adder=callbacks.add_disconnection_made_callback,
+                              adder_args=(self.on_host_disconnection_made, )
+                              )
+        self.events.attach_remover("host_disconnection_made",
+                                   callable=callbacks.remove_callbacks_only,
+                                   callable_args=(self.events.data["host_disconnection_made"]["id_list"], )
+                                   )
 
     def on_creation_input_accepted(self, node_type):
         pmc.createNode(node_type)
@@ -149,5 +150,5 @@ class Nodzgraph(_nodegraph.Nodegraph):
         for node in nodeitems_list:
             try:
                 pmc.delete(node.name)
-            except:
+            except RuntimeWarning:
                 LOG.warning("Not able to delete host node '{0}'".format(node.name), exc_info=True)

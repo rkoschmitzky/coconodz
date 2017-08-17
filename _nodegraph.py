@@ -604,6 +604,7 @@ class Nodegraph(Basegraph):
         self.graph.on_plug_created = self.on_plug_created
         self.graph.on_socket_created = self.on_socket_created
 
+        # @todo remove boilerplate
         self.events.add_event("creation_field_request",
                               adder=self._connect_slot,
                               adder_args=(self.graph.signal_creation_field_request,

@@ -1,11 +1,20 @@
+import logging
+
 import maya.OpenMaya as om
 import pymel.core as pmc
 
 from etc.maya.ae.hooks import AEHook
 
+LOG = logging.getLogger(name="CocoNodz.nodegraph")
+
 
 def remove_callback(callback_id):
-    om.MDGMessage.removeCallback(callback_id)
+    try:
+        om.MDGMessage.removeCallback(callback_id)
+    except RuntimeError:
+        LOG.error("Not able to remove callback id {0}.".format(callback_id) +
+                  "Please check the events class for the corresponding event.", exc_info=True)
+
 
 def remove_callbacks_only(id_list):
     # expect a list, loop through it and remove all callbacks
@@ -13,6 +22,7 @@ def remove_callbacks_only(id_list):
     for item in id_list:
         if str(type(item)) == "<type 'PyCObject'>":
             remove_callback(item)
+
 
 def add_node_name_changed_callback(callable):
 

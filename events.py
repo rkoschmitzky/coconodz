@@ -72,6 +72,9 @@ class Events(Singleton):
             LOG.warning('Event name already exits. Skipped adding event. Use the override flag to override the event.')
             return
         else:
+            # returning callback values have to be stored within a list
+            # the idea is not to create new objects when readding/resuming an event and just modify the existing object
+            # otherwise we wouldn't be able to update the returned value easily for a registered event
             try:
                 event_data = {"adder": adder,
                               "adder_args": adder_args,
@@ -93,6 +96,20 @@ class Events(Singleton):
                 LOG.error('Failed to register callback.', exc_info=True)
 
     def attach_remover(self, event_name, callable, callable_args=(), callable_kwargs={}):
+        """ adds a remover callable to an existing event
+
+        This can be useful if the remover will need access to the previous created event_data of the
+        registered event, like for example the id_list
+
+        Args:
+            event_name: registered event name
+            callable: callable that will be used to remove the event callback
+            callable_args: callable arguments tuple
+            callable_kwargs: callabe keyword arguments dictionary
+
+        Returns:
+
+        """
         assert event_name in self.registered_events, "No event named '{0}' registered".format(event_name)
 
         data = self.data.copy()
@@ -106,10 +123,8 @@ class Events(Singleton):
         """ base method to deregister an event
 
         Args:
-            event_name: name the event was registered for
-            callable: callable that will be called when removing the event (mostly this should be a specific remove callback/event function)
-            *callable_args: arguments that will be passed to the callable
-            **callable_kwargs: keyword arguments that will be passed to the callable
+            event_name: registered event name
+            restore_on_fail: will restore an event in case it can't be removed (currently not implement)
 
         Returns:
 
@@ -151,7 +166,7 @@ class Events(Singleton):
         """ resumes a previous paused event
 
         Args:
-            event_name:
+            event_name: registered event name
 
         Returns:
 
@@ -161,9 +176,12 @@ class Events(Singleton):
             # we don't have to assert an adder callable because this is required when adding events
             adder, args, kwargs = event_data["adder"], event_data["adder_args"], event_data["adder_kwargs"]
             assert event_data["paused"], "Event '{0}' is not paused. Nothing to resume.".format(event_name)
+
+            # execute callable and store the id in case the corresponding callback returns something
+            # like a hash or object that will be needed to remove it later
             id = adder(*args, **kwargs)
-            self._replace_id_list(event_name, [id])
             self.data[event_name] = event_data
+            self._replace_id_list(event_name, [id])
             self._toggle_paused_state(event_name)
 
     def _get_event_data(self, event_name):
@@ -216,7 +234,19 @@ class Events(Singleton):
             return True
 
     def _replace_id_list(self, event_name, new_id_list):
-        print "=", new_id_list
+        """ removes all items from id_list for a given event and appends the new items
+
+        This is a helper function that will not create a new list in the id_list event_data,
+        but modifies the existing one like it would be a new list. This is necessary because we don't
+        want to create a new object and just mutate the existing one.
+
+        Args:
+            event_name: registered event name
+            new_id_list: list with updated ids
+
+        Returns:
+
+        """
         event_data = self.data[event_name]
         for id in event_data["id_list"]:
             event_data["id_list"].remove(id)
@@ -225,37 +255,30 @@ class Events(Singleton):
 
     @staticmethod
     def _remove_from(dictionary, key):
+        """ simple helper function to remove a key from a dictionary
+
+        Args:
+            dictionary: dictionary
+            key: key
+
+        Returns:
+
+        """
         try:
             del dictionary[key]
         except KeyError:
             LOG.error('Not able to remove key {0} from dictionary {0}'.format(dictionary, key), exc_info=True)
 
     def remove_all_events(self):
+        """ removes all registered events
+
+        Please be aware that it will only remove events if all of them have a remover callable attached
+
+        Returns:
+
+        """
         for event in self.registered_events:
             assert self.data[event]["remover"], "No remover attached for event '{0}'. Skipped process".format(event)
 
         for event in self.registered_events:
             self.remove_event(event)
-
-if __name__ == '__main__':
-    import random
-
-    def some_callback():
-        ran = random.random()
-        #print ran
-        return ran
-
-
-    def print_id(*args):
-        #print "val is {0}".format(value)
-        pass
-
-    events = Events()
-
-    events.add_event("test", some_callback)
-    events.attach_remover("test", print_id, callable_args=events.data["test"]["id_list"])
-    print events.data["test"]
-    events.pause_event("test")
-    print events.data["test"]
-    events.resume_event("test")
-    print events.data["test"]
