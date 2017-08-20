@@ -25,11 +25,12 @@ from lib import Menu
 import version
 
 
-plugin_name = version.NAME
-plugin_version = "0.1.0"
-coconodz_version = version.version
+PLUGIN_NAME = version.NAME
+PLUGIN_VERSION = "0.1.0"
+COCONODZ_VERSION = version.version
 
 LOG = logging.getLogger("CocoNodz.maya.plugin")
+
 
 class MayaMenu(Menu):
 
@@ -49,7 +50,7 @@ MENU = MayaMenu()
 
 
 def _toplugin(mobject):
-    return ommpx.MFnPlugin(mobject, plugin_name, plugin_version)
+    return ommpx.MFnPlugin(mobject, PLUGIN_NAME, PLUGIN_VERSION)
 
 
 def initializePlugin(mobject):
