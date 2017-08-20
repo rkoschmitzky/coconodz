@@ -20,7 +20,6 @@ def get_attribute_tree(node):
                 for _attr in attr.iterDescendants():
                     parents[attr.longName()].append(_attr.longName())
         # for some reason the iterDescentants method is not returning the proper children
-        # for the array plug
         elif attr.isMulti():
             parents[attr.longName()] = [_attr.longName() for _attr in attr.children()]
 

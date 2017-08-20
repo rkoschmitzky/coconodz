@@ -399,6 +399,26 @@ class BackdropItem(QtWidgets.QGraphicsRectItem):
         raise NotImplementedError
 
 
+class Menu(QtWidgets.QMenu):
+
+    MENU_NAME = "CocoNodz"
+
+    def __init__(self, menu_bar):
+        super(Menu, self).__init__()
+
+        self.menu_bar = menu_bar
+        self.setTitle(self.MENU_NAME)
+
+    def init(self):
+        self.menu_bar.addMenu(self)
+
+    def add_action(self, title, icon=None):
+        if icon:
+            raise NotImplementedError
+
+        return self.addAction(title)
+
+
 class ConfiguationMixin(object):
     """ configuration class that makes dict/json type data accessable through dot lookups
 
