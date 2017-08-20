@@ -7,10 +7,7 @@ from etc.maya.qtutilities import maya_main_window
 from etc.maya import applib
 from etc.maya import callbacks
 
-reload(applib)
-reload(callbacks)
 import _nodegraph
-reload(_nodegraph)
 
 from lib import BaseWindow
 

@@ -9,7 +9,6 @@ from Qt import (QtWidgets,
 import nodz_main
 
 import lib
-reload(lib)
 
 from lib import (BaseWindow,
                  GraphContext,
