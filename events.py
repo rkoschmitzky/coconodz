@@ -183,6 +183,7 @@ class Events(Singleton):
             self.data[event_name] = event_data
             self._replace_id_list(event_name, [id])
             self._toggle_paused_state(event_name)
+            LOG.info("Resumed event '{0}'".format(event_name))
 
     def _get_event_data(self, event_name):
         """ get the subdict for a specific event
@@ -282,3 +283,31 @@ class Events(Singleton):
 
         for event in self.registered_events:
             self.remove_event(event)
+
+
+class SuppressEvent(object):
+    """ Decorator that allows to suppress given event
+
+    Call it like this @SuppressEvent("my_event")
+    It will pause the event, call the callable and resume the event.
+    """
+
+    events = Events()
+
+    def __init__(self, event_name):
+        """ needs a registered event name as argument
+
+        Args:
+            event_name: registered event name
+        """
+        self._event_name = event_name
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            assert self._event_name in self.events.registered_events, "Unknown event '{0}'.".format(self._event_name) +\
+                                                                      "Please ensure the event was registered."
+            self.events.pause_event(self._event_name)
+            result = func(*args, **kwargs)
+            self.events.resume_event(self._event_name)
+            return result
+        return inner

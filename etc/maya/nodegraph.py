@@ -6,9 +6,8 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from etc.maya.qtutilities import maya_main_window
 from etc.maya import applib
 from etc.maya import callbacks
-
+from events import SuppressEvent
 import _nodegraph
-
 from lib import BaseWindow
 
 
@@ -138,12 +137,58 @@ class Nodzgraph(_nodegraph.Nodegraph):
         attribute_type = pmc.PyNode("{0}.{1}".format(node_name, attribute_name)).type()
         node.add_attribute(attribute_name, data_type=attribute_type)
 
+    @SuppressEvent("host_node_created")
+    def on_node_created(self, node):
+        """ slot extension
+
+        Args:
+            node:
+
+        Returns:
+
+        """
+        super(Nodzgraph, self).on_node_created(node)
+
+    @SuppressEvent("host_connection_made")
     def on_connection_made(self, node_name1, slot_name1, node_name2, slot_name2):
+        """ slot extension
+
+        Args:
+            node_name1:
+            slot_name1:
+            node_name2:
+            slot_name2:
+
+        Returns:
+
+        """
         slot1 = pmc.PyNode("{0}.{1}".format(node_name1, slot_name1))
         slot2 = pmc.PyNode("{0}.{1}".format(node_name2, slot_name2))
         slot1 >> slot2
 
+    @SuppressEvent("connection_made")
+    def on_host_connection_made(self, plug_name, socket_name):
+        """ slot extension
+
+        Args:
+            plug_name:
+            socket_name:
+
+        Returns:
+
+        """
+        super(Nodzgraph, self).on_host_connection_made(plug_name, socket_name)
+
+    @SuppressEvent("host_node_deleted")
     def on_nodes_deleted(self, nodeitems_list):
+        """ slot override
+
+        Args:
+            nodeitems_list:
+
+        Returns:
+
+        """
         for node in nodeitems_list:
             try:
                 pmc.delete(node.name)
