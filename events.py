@@ -185,6 +185,16 @@ class Events(Singleton):
             self._toggle_paused_state(event_name)
             LOG.info("Resumed event '{0}'".format(event_name))
 
+    def resume_paused_events(self):
+        """ resumes all paused events
+
+        Returns:
+
+        """
+        for event_name, event_data in self.data.iteritems():
+            if event_data["pause"]:
+                self.resume_event(event_name)
+
     def _get_event_data(self, event_name):
         """ get the subdict for a specific event
 
@@ -285,7 +295,7 @@ class Events(Singleton):
             self.remove_event(event)
 
 
-class SuppressEvent(object):
+class SuppressEvents(object):
     """ Decorator that allows to suppress given event
 
     Call it like this @SuppressEvent("my_event")
@@ -294,20 +304,31 @@ class SuppressEvent(object):
 
     events = Events()
 
-    def __init__(self, event_name):
+    def __init__(self, event_name_or_names):
         """ needs a registered event name as argument
 
         Args:
-            event_name: registered event name
+            event_name_or_names: registered event name
         """
-        self._event_name = event_name
+        self._event_name_or_names = event_name_or_names
 
     def __call__(self, func):
         def inner(*args, **kwargs):
-            assert self._event_name in self.events.registered_events, "Unknown event '{0}'.".format(self._event_name) +\
-                                                                      "Please ensure the event was registered."
-            self.events.pause_event(self._event_name)
+            if isinstance(self._event_name_or_names, str):
+                event_names = [self._event_name_or_names]
+            else:
+                event_names = self._event_name_or_names
+
+            unknown = [event for event in event_names if event not in self.events.registered_events]
+
+            assert not unknown, "Unknown events: " + " ".join(unknown) + ".Please ensure the event was registered."
+
+            # pause events
+            for event_name in event_names:
+                self.events.pause_event(event_name)
             result = func(*args, **kwargs)
-            self.events.resume_event(self._event_name)
+            # resume events
+            for event_name in event_names:
+                self.events.resume_event(event_name)
             return result
         return inner

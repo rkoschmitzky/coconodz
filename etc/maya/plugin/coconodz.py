@@ -2,19 +2,19 @@ import logging
 import os
 import sys
 
-_PACKAGE_NAME = "coconodz"
-_VAR_NAME = "{0}_STARTUP".format(_PACKAGE_NAME.upper())
+PACKAGE_NAME = "coconodz"
+VAR_NAME = "{0}_STARTUP".format(PACKAGE_NAME.upper())
 
 _LOG = logging.getLogger("Coconodz.startup.Maya")
 _LOG.info("Launching startup Script")
 
 
 # adding python paths
-if _VAR_NAME in os.environ:
-    COCONODZ_PARENT = os.path.normpath(os.environ[_VAR_NAME].split(_PACKAGE_NAME, 1)[0].strip(";"))
+if VAR_NAME in os.environ:
+    COCONODZ_PARENT = os.path.normpath(os.environ[VAR_NAME].split(PACKAGE_NAME, 1)[0].strip(";"))
     sys.path.append(COCONODZ_PARENT)
-    sys.path.append(os.path.join(COCONODZ_PARENT, _PACKAGE_NAME))
-    sys.path.append(os.path.join(COCONODZ_PARENT, _PACKAGE_NAME, "site-packages"))
+    sys.path.append(os.path.join(COCONODZ_PARENT, PACKAGE_NAME))
+    sys.path.append(os.path.join(COCONODZ_PARENT, PACKAGE_NAME, "site-packages"))
 
 
 import maya.OpenMayaMPx as ommpx
@@ -49,13 +49,13 @@ class MayaMenu(Menu):
 MENU = MayaMenu()
 
 
-def _toplugin(mobject):
+def _to_plugin(mobject):
     return ommpx.MFnPlugin(mobject, PLUGIN_NAME, PLUGIN_VERSION)
 
 
 def initializePlugin(mobject):
     LOG.info("Initializing CocoNodz")
-    _toplugin(mobject)
+    _to_plugin(mobject)
     # add CocoNodz menu
     MENU.init()
     # if there are not events registered reinitialize them
@@ -65,7 +65,7 @@ def initializePlugin(mobject):
 
 def uninitializePlugin(mobject):
     LOG.info("Uninitialize CocoNodz")
-    _toplugin(mobject)
+    _to_plugin(mobject)
     # remove CocoNodz menu
     MENU.deleteLater()
     # remove all registered events

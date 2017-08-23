@@ -8,21 +8,19 @@ from Qt import (QtWidgets,
 
 import nodz_main
 
-import lib
-
 from lib import (BaseWindow,
                  GraphContext,
                  SearchField,
                  AttributeContext,
                  ConfiguationMixin,
-                 )
+                 Singleton)
 from events import Events
 
 
 LOG = logging.getLogger(name="CocoNodz.nodegraph")
 
 
-class Basegraph(object):
+class Basegraph(Singleton):
 
     def __init__(self, *args, **kwargs):
         super(Basegraph, self).__init__()
@@ -333,7 +331,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         super(Nodz, self)._deleteSelectedNodes()
 
     def create_node(self, name, position=None, alternate=False, node_type="default"):
-
+        print "create node", name
         _ = "node_{0}".format(node_type)
         if hasattr(self.configuration, _):
             # and create node with included preset
@@ -858,14 +856,17 @@ class Nodegraph(Basegraph):
             self.graph.signal_connection_made.emit(source_node_name, source_plug_name, destination_node_name, destination_socket_name)
 
     def on_host_node_created(self, node_name, node_type):
-        node = self.get_node_by_name(node_name)
-        if node and node.node_type == node_type:
-            self.graph.editNode(node, node_name)
-        elif node and node_type != node_type:
-            LOG.warning("Host node misstmatch to graph node." +
-                        "Expected nodetype '{0}' got '{1}'".format(node.node_type, node_type))
+        if not node_type in self.creation_field.available_items:
+            LOG.info("Host node type '{0}' not available to Nodzgraph.".format(node_type))
         else:
-            self.graph.create_node(name=node_name, node_type=node_type)
+            node = self.get_node_by_name(node_name)
+            if node and node.node_type == node_type:
+                self.graph.editNode(node, node_name)
+            elif node and node_type != node_type:
+                LOG.warning("Host node misstmatch to graph node." +
+                            "Expected nodetype '{0}' got '{1}'".format(node.node_type, node_type))
+            else:
+                self.graph.create_node(name=node_name, node_type=node_type)
 
     def on_host_node_deleted(self, node_name):
         node = self.get_node_by_name(node_name)
