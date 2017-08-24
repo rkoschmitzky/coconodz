@@ -3,6 +3,10 @@ import logging
 import pymel.core as pmc
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
+from etc.maya.ae.hooks import (DESIRED_HOOK,
+                               OWNER,
+                               remove_template_custom_content
+                              )
 from etc.maya.qtutilities import maya_main_window
 from etc.maya import applib
 from etc.maya import callbacks
@@ -58,14 +62,11 @@ class Nodzgraph(_nodegraph.Nodegraph):
         self.events.add_event("ShadingEngine_template_hook",
                               adder=pmc.callbacks,
                               adder_kwargs={"addCallback": callbacks.add_template_custom_content,
-                                            "hook": "AETemplateCustomContent",
-                                             "owner": "coconodz"
+                                            "hook": DESIRED_HOOK,
+                                            "owner": OWNER
                                             },
-                              remover=pmc.callbacks,
-                              remover_kwargs={"removeCallback": callbacks.add_template_custom_content,
-                                              "hook": "AETemplateCustomContent",
-                                              "owner": "coconodz"}
-                          )
+                              remover=remove_template_custom_content
+                              )
         self.events.add_event("host_node_name_changed",
                               adder=callbacks.add_node_name_changed_callback,
                               adder_args=(self.on_host_node_renamed, )

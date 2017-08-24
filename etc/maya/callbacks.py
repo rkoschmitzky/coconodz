@@ -3,7 +3,9 @@ import logging
 import maya.OpenMaya as om
 import pymel.core as pmc
 
-from etc.maya.ae.hooks import AEHook
+from etc.maya.ae.hooks import (AEHook,
+                               rebuild_attribute_editor
+                               )
 
 LOG = logging.getLogger(name="CocoNodz.nodegraph")
 

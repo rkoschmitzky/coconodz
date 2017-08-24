@@ -19,6 +19,7 @@ if VAR_NAME in os.environ:
 
 import maya.OpenMayaMPx as ommpx
 
+from etc.maya.ae.hooks import rebuild_attribute_editor
 from etc.maya.qtutilities import maya_menu_bar
 from etc.maya.nodegraph import Nodzgraph
 from lib import Menu
@@ -62,6 +63,8 @@ def initializePlugin(mobject):
     if not MENU.NODZGRAPH.events.registered_events:
         MENU.NODZGRAPH.register_events()
 
+    rebuild_attribute_editor()
+
 
 def uninitializePlugin(mobject):
     LOG.info("Uninitialize CocoNodz")
@@ -72,5 +75,4 @@ def uninitializePlugin(mobject):
     MENU.NODZGRAPH.events.remove_all_events()
 
     # close open Nodegraph instance
-    # @todo remove all instances
     MENU.NODZGRAPH.window.close()

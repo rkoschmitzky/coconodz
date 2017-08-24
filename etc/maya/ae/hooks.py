@@ -5,6 +5,9 @@ from Qt import QtCore, QtWidgets
 
 from etc.maya.qtutilities import wrapinstance
 
+DESIRED_HOOK = "AETemplateCustomContent"
+OWNER = "CocoNodz"
+
 class AEHook(pmc.ui.AETemplate):
     """ AETemplateCustomContent
 
@@ -64,3 +67,29 @@ class AEHook(pmc.ui.AETemplate):
 
         """
         pass
+
+
+def remove_template_custom_content():
+    """ removes all callbacks for the DESIRED_HOOK
+
+    Returns:
+
+    """
+    pmc.callbacks(clearCallbacks=True, hook=DESIRED_HOOK, owner=OWNER)
+    rebuild_attribute_editor()
+
+
+def rebuild_attribute_editor():
+    """ rebuilds the attribute editor
+
+    This should be called after removing a AETemplateCustomContent callback
+
+    Returns:
+
+    """
+    edForm = pmc.melGlobals['gAttributeEditorForm']
+    if pmc.layout(edForm, query=True, exists=True):
+        children = pmc.layout(edForm, query=True, childArray=True)
+        if children:
+            pmc.deleteUI(children[0])
+            pmc.mel.attributeEditorVisibilityStateChange(1, "")
