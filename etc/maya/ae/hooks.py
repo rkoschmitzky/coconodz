@@ -29,11 +29,11 @@ class AEHook(pmc.ui.AETemplate):
         """
         self.beginLayout(self.layout_title, collapse=False)
         self.beginScrollLayout()
-        self.callCustom(self.initialize_nodegraph_button, self.update_nodegraph_button, self.layout_title)
+        self.callCustom(self.initialize_nodzgraph_button, self.update_nodegraph_button, self.layout_title)
         self.endScrollLayout()
         self.endLayout()
 
-    def initialize_nodegraph_button(self, attr):
+    def initialize_nodzgraph_button(self, attr):
         """ adds our custom widgets
 
         """
@@ -42,7 +42,8 @@ class AEHook(pmc.ui.AETemplate):
         pmc.cmds.columnLayout(adj=True)
         maya_button = pmc.button("nodegraph_eval", label=self.nodegraph_button_title)
         ptr = omui.MQtUtil.findControl(maya_button)
-        self.button = wrapinstance(long(ptr), QtWidgets.QPushButton)
+        button = wrapinstance(long(ptr), QtWidgets.QPushButton)
+        button.clicked.connect(self.open_nodzgraph)
 
         pmc.setUITemplate('attributeEditorTemplate', popTemplate=True)
 
@@ -55,3 +56,11 @@ class AEHook(pmc.ui.AETemplate):
         """
         if self.node and self.node.type() == "shadingEngine":
             self._add_layout()
+
+    def open_nodzgraph(self):
+        """ to patch in the Nodzgraph class
+
+        Returns:
+
+        """
+        pass

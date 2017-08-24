@@ -35,6 +35,8 @@ class Nodzgraph(_nodegraph.Nodegraph):
         if int(pmc.about(api=True)) >= 201700:
             self.window = MayaBaseWindow(parent)
 
+        callbacks.AEHook.open_nodzgraph = self.open
+
     def open(self):
         """ opens the Nodegraph with dockable configuration settings
 
@@ -206,3 +208,8 @@ class Nodzgraph(_nodegraph.Nodegraph):
                 pmc.delete(node.name)
             except RuntimeWarning:
                 LOG.warning("Not able to delete host node '{0}'".format(node.name), exc_info=True)
+
+
+def open_nodzgraph():
+    window = Nodzgraph()
+    window.open()

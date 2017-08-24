@@ -24,4 +24,3 @@ def get_attribute_tree(node):
             parents[attr.longName()] = [_attr.longName() for _attr in attr.children()]
 
     return parents
-
