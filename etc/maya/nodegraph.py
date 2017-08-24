@@ -43,9 +43,12 @@ class Nodzgraph(_nodegraph.Nodegraph):
         Returns:
 
         """
-        super(Nodzgraph, self).open(dockable=self.configuration.maya.dockable,
-                                    area=self.configuration.maya.area,
-                                    floating=self.configuration.maya.floating
+        super(Nodzgraph, self).open(dockable=self.configuration.maya.docked,
+                                    area=self.configuration.maya.dock_area,
+                                    allowedArea=self.configuration.maya.allowed_dock_areas,
+                                    floating=self.configuration.maya.floating,
+                                    width=self.configuration.maya.width,
+                                    height=self.configuration.maya.height
                                     )
 
     def register_events(self):
