@@ -3,16 +3,16 @@ import logging
 import pymel.core as pmc
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
-from etc.maya.ae.hooks import (DESIRED_HOOK,
-                               OWNER,
-                               remove_template_custom_content
-                              )
-from etc.maya.qtutilities import maya_main_window
-from etc.maya import applib
-from etc.maya import callbacks
-from events import SuppressEvents
-import _nodegraph
-from lib import BaseWindow
+from coconodz.etc.maya.ae.hooks import (DESIRED_HOOK,
+                                        OWNER,
+                                        remove_template_custom_content
+                                        )
+from coconodz.etc.maya.qtutilities import maya_main_window
+from coconodz.etc.maya import applib
+from coconodz.etc.maya import callbacks
+from coconodz.events import SuppressEvents
+import coconodz.nodegraph as nodegraph
+from coconodz.lib import BaseWindow
 
 
 LOG = logging.getLogger(name="CocoNodz.maya.nodegraph")
@@ -28,7 +28,7 @@ class MayaBaseWindow(MayaQWidgetDockableMixin, BaseWindow):
         super(MayaBaseWindow, self).__init__(parent)
 
 
-class Nodzgraph(_nodegraph.Nodegraph):
+class Nodzgraph(nodegraph.Nodegraph):
     """ Maya Nodegraph widget implementation
 
     """
@@ -39,6 +39,7 @@ class Nodzgraph(_nodegraph.Nodegraph):
         if int(pmc.about(api=True)) >= 201700:
             self.window = MayaBaseWindow(parent)
 
+        # patch open_nodzgraph function
         callbacks.AEHook.open_nodzgraph = self.open
 
     def open(self):
@@ -117,9 +118,9 @@ class Nodzgraph(_nodegraph.Nodegraph):
     def on_context_request(self, widget):
         _widget = super(Nodzgraph, self).on_context_request(widget)
 
-        if isinstance(widget, _nodegraph.Nodz):
+        if isinstance(widget, nodegraph.Nodz):
             _widget.available_items = []
-        elif isinstance(widget, _nodegraph.NodeItem):
+        elif isinstance(widget, nodegraph.NodeItem):
             node = pmc.PyNode(_widget.property("node_name"))
             if node:
                 # only update items if the node has changed
@@ -212,8 +213,3 @@ class Nodzgraph(_nodegraph.Nodegraph):
                 pmc.delete(node.name)
             except RuntimeWarning:
                 LOG.warning("Not able to delete host node '{0}'".format(node.name), exc_info=True)
-
-
-def open_nodzgraph():
-    window = Nodzgraph()
-    window.open()

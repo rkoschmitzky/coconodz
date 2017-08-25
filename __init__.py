@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 
-from version import version
+from coconodz.version import version
 
 __author__ = "Rico Koschmitzky"
 __email__ = "contact@ricokoschmitzky.com"

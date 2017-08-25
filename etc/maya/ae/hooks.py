@@ -1,12 +1,14 @@
 import pymel.core as pmc
 import maya.OpenMayaUI as omui
 
-from Qt import QtCore, QtWidgets
-
-from etc.maya.qtutilities import wrapinstance
+from Qt import (QtCore,
+                QtWidgets
+                )
+from coconodz.etc.maya.qtutilities import wrapinstance
 
 DESIRED_HOOK = "AETemplateCustomContent"
 OWNER = "CocoNodz"
+
 
 class AEHook(pmc.ui.AETemplate):
     """ AETemplateCustomContent

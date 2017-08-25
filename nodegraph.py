@@ -1,5 +1,4 @@
 import logging
-import os
 
 from Qt import (QtWidgets,
                 QtCore,
@@ -8,13 +7,13 @@ from Qt import (QtWidgets,
 
 import nodz_main
 
-from lib import (BaseWindow,
-                 GraphContext,
-                 SearchField,
-                 AttributeContext,
-                 ConfiguationMixin,
-                 Singleton)
-from events import Events
+from coconodz.lib import (BaseWindow,
+                          GraphContext,
+                          SearchField,
+                          AttributeContext,
+                          ConfiguationMixin,
+                          Singleton)
+from coconodz.events import Events
 
 
 LOG = logging.getLogger(name="CocoNodz.nodegraph")

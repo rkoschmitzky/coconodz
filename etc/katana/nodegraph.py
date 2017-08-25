@@ -1,6 +1,6 @@
-import _nodegraph
+import nodegraph
 
-class Nodzgraph(_nodegraph.Nodegraph):
+class Nodzgraph(nodegraph.Nodegraph):
 
     def __init__(self, parent):
         super(Nodzgraph, self).__init__(parent)

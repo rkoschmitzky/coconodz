@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import pprint
+import sys
 
 from Qt import (QtWidgets,
                 QtGui,
@@ -569,3 +570,17 @@ def read_json(filepath):
             return data
         except ValueError:
             return data
+
+
+def reload_modules(namespace):
+    """
+
+    Args:
+        namespace:
+
+    Returns:
+
+    """
+    modules = [_module for _module in sys.modules if _module.startswith(namespace)]
+    for module in modules:
+        reload(module)

@@ -1,6 +1,6 @@
 import logging
 
-from lib import Singleton
+from coconodz.lib import Singleton
 
 LOG = logging.getLogger(name="CocoNodz.events")
 

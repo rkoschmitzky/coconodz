@@ -2,35 +2,30 @@ import logging
 import os
 import sys
 
+import maya.OpenMayaMPx as ommpx
+
 PACKAGE_NAME = "coconodz"
 VAR_NAME = "{0}_STARTUP".format(PACKAGE_NAME.upper())
 
-_LOG = logging.getLogger("Coconodz.startup.Maya")
-_LOG.info("Launching startup Script")
-
+LOG = logging.getLogger("CocoNodz.maya.plugin")
+LOG.info("Launching {0}".format(PACKAGE_NAME))
 
 # adding python paths
 if VAR_NAME in os.environ:
     COCONODZ_PARENT = os.path.normpath(os.environ[VAR_NAME].split(PACKAGE_NAME, 1)[0].strip(";"))
     sys.path.append(COCONODZ_PARENT)
-    sys.path.append(os.path.join(COCONODZ_PARENT, PACKAGE_NAME))
     sys.path.append(os.path.join(COCONODZ_PARENT, PACKAGE_NAME, "site-packages"))
 
-
-import maya.OpenMayaMPx as ommpx
-
-from etc.maya.ae.hooks import rebuild_attribute_editor
-from etc.maya.qtutilities import maya_menu_bar
-from etc.maya.nodegraph import Nodzgraph
-from lib import Menu
-import version
+from coconodz.etc.maya.ae.hooks import rebuild_attribute_editor
+from coconodz.etc.maya.qtutilities import maya_menu_bar
+from coconodz.etc.maya.nodegraph import Nodzgraph
+from coconodz.lib import Menu
+from coconodz.version import version
 
 
-PLUGIN_NAME = version.NAME
+PLUGIN_NAME = PACKAGE_NAME
 PLUGIN_VERSION = "0.1.0"
-COCONODZ_VERSION = version.version
-
-LOG = logging.getLogger("CocoNodz.maya.plugin")
+COCONODZ_VERSION = version
 
 
 class MayaMenu(Menu):
@@ -62,7 +57,7 @@ def initializePlugin(mobject):
     # if there are not events registered reinitialize them
     if not MENU.NODZGRAPH.events.registered_events:
         MENU.NODZGRAPH.register_events()
-
+    # refresh the attribute editor
     rebuild_attribute_editor()
 
 
