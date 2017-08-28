@@ -581,6 +581,7 @@ def reload_modules(namespace):
     Returns:
 
     """
-    modules = [_module for _module in sys.modules if _module.startswith(namespace)]
+    modules = [sys.modules[_module] for _module in sys.modules if _module.startswith(namespace) if sys.modules[_module]]
     for module in modules:
         reload(module)
+        LOG.info("Reloaded module '{0}'".format(module))

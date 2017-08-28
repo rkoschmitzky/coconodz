@@ -330,7 +330,6 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         super(Nodz, self)._deleteSelectedNodes()
 
     def create_node(self, name, position=None, alternate=False, node_type="default"):
-        print "create node", name
         _ = "node_{0}".format(node_type)
         if hasattr(self.configuration, _):
             # and create node with included preset
@@ -435,7 +434,7 @@ class Nodegraph(Basegraph):
 
     """
 
-    def __init__(self, parent=None, creation_items=[]):
+    def __init__(self, parent=None):
         super(Nodegraph, self).__init__(parent=parent)
         # this can be overriden in subclasses to allow mixing in other classes
         # that are not host agnostic
@@ -457,8 +456,7 @@ class Nodegraph(Basegraph):
         self.register_events()
 
         # just testing
-        if creation_items:
-            self.creation_field.available_items = creation_items
+        self.creation_field.available_items = self.configuration.available_node_types
 
     @property
     def window(self):
@@ -555,6 +553,8 @@ class Nodegraph(Basegraph):
         Returns:
 
         """
+        #print "="*20
+        #print "OPEN"
         self.window.show(*args, **kwargs)
 
     def save_configuration(self, filepath):

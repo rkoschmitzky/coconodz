@@ -16,8 +16,7 @@ from coconodz.lib import BaseWindow
 
 
 LOG = logging.getLogger(name="CocoNodz.maya.nodegraph")
-# todo add allowed nodetypes to configuration
-NODES = list(set(pmc.listNodeTypes("shader") + pmc.listNodeTypes("texture")))
+
 
 class MayaBaseWindow(MayaQWidgetDockableMixin, BaseWindow):
     """ getting the DockableMixin class in to provide all
@@ -32,8 +31,8 @@ class Nodzgraph(nodegraph.Nodegraph):
     """ Maya Nodegraph widget implementation
 
     """
-    def __init__(self, parent=maya_main_window(), creation_items=NODES):
-        super(Nodzgraph, self).__init__(parent, creation_items)
+    def __init__(self, parent=maya_main_window()):
+        super(Nodzgraph, self).__init__(parent)
 
         # just providing docking features for Maya 2017 and newer
         if int(pmc.about(api=True)) >= 201700:
@@ -41,6 +40,9 @@ class Nodzgraph(nodegraph.Nodegraph):
 
         # patch open_nodzgraph function
         callbacks.AEHook.open_nodzgraph = self.open
+
+        # add node gategories
+        self.append_available_node_categories()
 
     def open(self):
         """ opens the Nodegraph with dockable configuration settings
@@ -108,6 +110,21 @@ class Nodzgraph(nodegraph.Nodegraph):
                                    callable=callbacks.remove_callbacks_only,
                                    callable_args=(self.events.data["host_disconnection_made"]["id_list"], )
                                    )
+
+    def append_available_node_categories(self):
+        """ appends available node types in categories
+
+        Returns:
+
+        """
+        available_node_types = self.graph.creation_field.available_items
+        for types in self.configuration.maya.available_node_categories:
+            node_types = pmc.listNodeTypes(types)
+            for node_type in node_types:
+                if not node_type in available_node_types:
+                    available_node_types.append(node_type)
+
+        self.graph.creation_field.available_items = available_node_types
 
     def on_creation_input_accepted(self, node_type):
         pmc.createNode(node_type)

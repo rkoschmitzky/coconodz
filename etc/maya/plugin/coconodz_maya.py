@@ -19,19 +19,17 @@ if VAR_NAME in os.environ:
 from coconodz.etc.maya.ae.hooks import rebuild_attribute_editor
 from coconodz.etc.maya.qtutilities import maya_menu_bar
 from coconodz.etc.maya.nodegraph import Nodzgraph
-from coconodz.lib import Menu
+from coconodz.lib import (Menu,
+                          reload_modules)
 from coconodz.version import version
 
 
 PLUGIN_NAME = PACKAGE_NAME
 PLUGIN_VERSION = "0.1.0"
 COCONODZ_VERSION = version
-
+NODZGRAPH = Nodzgraph()
 
 class MayaMenu(Menu):
-
-    NODZGRAPH = Nodzgraph()
-
     def __init__(self, menu_bar=maya_menu_bar()):
         super(MayaMenu, self).__init__(menu_bar)
 
@@ -39,7 +37,12 @@ class MayaMenu(Menu):
 
         # add all actions and connect them
         open_nodzgraph_action = self.add_action("Open Nodzgraph")
-        open_nodzgraph_action.triggered.connect(self.NODZGRAPH.open)
+        open_nodzgraph_action.triggered.connect(NODZGRAPH.open)
+        #reload_coconodz_action = self.add_action("Reload CocoNodz")
+        #reload_coconodz_action.triggered.connect(self.on_reload_coconodz_triggerd)
+
+    def on_reload_coconodz_triggerd(self):
+        reload_modules(PACKAGE_NAME)
 
 
 MENU = MayaMenu()
@@ -55,8 +58,8 @@ def initializePlugin(mobject):
     # add CocoNodz menu
     MENU.init()
     # if there are not events registered reinitialize them
-    if not MENU.NODZGRAPH.events.registered_events:
-        MENU.NODZGRAPH.register_events()
+    if not NODZGRAPH.events.registered_events:
+        NODZGRAPH.register_events()
     # refresh the attribute editor
     rebuild_attribute_editor()
 
@@ -67,7 +70,6 @@ def uninitializePlugin(mobject):
     # remove CocoNodz menu
     MENU.deleteLater()
     # remove all registered events
-    MENU.NODZGRAPH.events.remove_all_events()
-
-    # close open Nodegraph instance
-    MENU.NODZGRAPH.window.close()
+    NODZGRAPH.events.remove_all_events()
+    # close open Nodzgraph instance
+    NODZGRAPH.window.close()
