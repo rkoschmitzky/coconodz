@@ -11,15 +11,16 @@ from coconodz.lib import (BaseWindow,
                           GraphContext,
                           SearchField,
                           AttributeContext,
-                          ConfiguationMixin,
-                          Singleton)
-from coconodz.events import Events
+                          ConfiguationMixin)
+from coconodz.events import (Events,
+                             SuppressEvents
+                             )
 
 
 LOG = logging.getLogger(name="CocoNodz.nodegraph")
 
 
-class Basegraph(Singleton):
+class Basegraph(object):
 
     def __init__(self, *args, **kwargs):
         super(Basegraph, self).__init__()
@@ -376,6 +377,9 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         return nodeItem
 
+    def delete_node(self, name):
+        raise NotImplementedError
+
     def connect_attributes(self, plug, socket):
         connection = self.createConnection(plug, socket)
         return connection
@@ -440,7 +444,6 @@ class Nodegraph(Basegraph):
         # that are not host agnostic
         self._window = BaseWindow(parent)
         self._events = Events()
-        self._signal_block = False
 
         # create the graphingscene
         self._graph = Nodz(self._window)
@@ -457,6 +460,10 @@ class Nodegraph(Basegraph):
 
         # just testing
         self.creation_field.available_items = self.configuration.available_node_types
+
+        self.graph.delete_node = self._delete_node
+
+        self._initialized = True
 
     @property
     def window(self):
@@ -553,8 +560,6 @@ class Nodegraph(Basegraph):
         Returns:
 
         """
-        #print "="*20
-        #print "OPEN"
         self.window.show(*args, **kwargs)
 
     def save_configuration(self, filepath):
@@ -582,6 +587,21 @@ class Nodegraph(Basegraph):
 
     def clear(self):
         self.graph.clearGraph()
+
+    @SuppressEvents(["node_created", "socket_created", "plug_created", "connection_made", "plug_connected", "socket_connected"])
+    def display_host_node(self, node_name, node_type, position=None, alternate=False):
+        # @todo estimate creation position
+        self.graph.create_node(name=node_name, node_type=node_type)
+
+    @SuppressEvents("node_deleted")
+    def undisplay_node(self, node_name):
+        self.graph.delete_node(node_name)
+
+    def _delete_node(self, name):
+        node = self.get_node_by_name(name)
+        print node
+        if node:
+            self.graph.deleteNode(node)
 
     def _connect_slot(self, signal, slot):
         signal.connect(slot)

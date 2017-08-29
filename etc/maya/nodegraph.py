@@ -202,7 +202,7 @@ class Nodzgraph(nodegraph.Nodegraph):
         slot2 = pmc.PyNode("{0}.{1}".format(node_name2, slot_name2))
         slot1 >> slot2
 
-    @SuppressEvents("connection_made")
+    @SuppressEvents(["connection_made", "plug_connected", "socket_connected"])
     def on_host_connection_made(self, plug_name, socket_name):
         """ slot extension
 

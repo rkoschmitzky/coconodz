@@ -69,3 +69,9 @@ if exec_filename:
             raise NotImplementedError("Not able to detect proper host. {0}".format(_ERROR_MSG))
         else:
             host = hosts[0]
+
+    if host == "maya":
+        from coconodz.etc.maya.nodegraph import Nodzgraph as _Nodzgraph
+        Nodzgraph = _Nodzgraph()
+    elif host == "katana":
+        raise NotImplementedError

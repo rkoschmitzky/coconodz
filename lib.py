@@ -13,6 +13,13 @@ from Qt import (QtWidgets,
 LOG = logging.getLogger(name="CocoNodz.nodegraph")
 
 
+class Singleton(object):
+    def __new__(type):
+        if not '_the_instance' in type.__dict__:
+            type._the_instance = object.__new__(type)
+        return type._the_instance
+
+
 class SafeOpen(object):
 
     def __init__(self, *args, **kwargs):
@@ -531,13 +538,6 @@ class DictDotLookup(object):
 
     def get_original(self):
         return self.__original_data
-
-
-class Singleton(object):
-    def __new__(type):
-        if not '_the_instance' in type.__dict__:
-            type._the_instance = object.__new__(type)
-        return type._the_instance
 
 
 def write_json(filepath, data):
