@@ -589,7 +589,7 @@ class Nodegraph(Basegraph):
         self.graph.clearGraph()
 
     @SuppressEvents(["node_created", "socket_created", "plug_created", "connection_made", "plug_connected", "socket_connected"])
-    def display_host_node(self, node_name, node_type, position=None, alternate=False):
+    def display_host_node(self, node_name, node_type, attributes_dict={}, connections_dict={}):
         # @todo estimate creation position
         self.graph.create_node(name=node_name, node_type=node_type)
 
@@ -608,6 +608,82 @@ class Nodegraph(Basegraph):
 
     def _disconnect_slot(self, signal, slot):
         signal.disconnect(slot)
+
+    def __assert_attribute(self, attribute):
+        """ simple attribute formatting assertion
+
+        Args:
+            attribute: attribute using a '.' separator formatting, e.g.: "material.color", "surface.tension"
+
+        Returns:
+
+        """
+        _msg = "Unexpected formatting. Expect '.' as node attribute separator."
+        assert len(attribute.split(".")) != 1, _msg
+
+    def _create_nodes(self, attributes_dict):
+        """ creates nodes in nodegraph if they are not existing
+
+        Args:
+            attributes_dict: dictionary that holds the attribute as key and a type and data_type description like this
+            {"shader1.color": {"node_type": "shader"
+                               "type": "plug"
+                               "data_type": "color"
+                               }
+            }
+        Returns:
+
+        """
+        for attribute, value in attributes_dict:
+            self.__assert_attribute(attribute)
+            _msg = "Unexpected formatting. Expected dictionary holding a 'node_type' key."
+            assert (isinstance(value, dict) and "node_type" in value), _msg
+
+            node = self.get_node_by_name(attribute.split(".")[0])
+            if not node:
+                self.graph.create_node(name=self.get_node_by_name(attribute.split(".")[0]),
+                                       node_type=value["node_type"])
+
+    def _create_attributes(self, attributes_dict):
+        """ creates attributes for availailable nodes in nodegraph
+
+        Args:
+            attributes_dict: dictionary that holds the attribute as key and a type and data_type description like this
+            {"shader1.color": {"node_type": "shader"
+                               "type": "plug"
+                               "data_type": "color"
+                               }
+            }
+
+        Returns:
+
+        """
+
+        def _create_node_attr(name, plug_or_socket, data_type):
+            self.__assert_attribute(name)
+            node = self.get_node_by_name(name.split(".")[0])
+            if node:
+                attribute_name = name.split(".")[1]
+                if plug_or_socket == "plug":
+                    node.add_attribute(attribute_name, plug=True, socket=False, data_type=data_type)
+                elif plug_or_socket == "socket":
+                    node.add_attribute(attribute_name, plug=False, socket=True, data_type=data_type)
+                elif plug_or_socket == "slot":
+                    node.add_attribute(attribute_name, plug=True, socket=True, data_type=data_type)
+            else:
+                LOG.info("Node '{0}' doesn't exist in graph yet.".format(node))
+
+        for key, value in attributes_dict:
+            msg = "Unexpected formatting. Expected dictionary holding a 'type' and 'data_type' key"
+            assert (isinstance(value, dict) and "type" in value), msg
+            assert (isinstance(value, dict) and "data_type" in value), msg
+
+            _create_node_attr(key, value["type"], value["data_type"])
+
+
+    def _create_connections(self, connections_dict):
+        for plug, socket in connections_dict:
+            self.__handle_connection(plug, socket, True)
 
     def register_events(self):
         """ setup events by connecting all signals and slots
@@ -906,6 +982,8 @@ class Nodegraph(Basegraph):
         node.setSelected(False)
 
     def __handle_connection(self, plug_name, socket_name, state):
+        self.__assert_attribute(plug_name)
+        self.__assert_attribute(socket_name)
 
         plug = self.get_plug_by_name(plug_name)
         socket = self.get_socket_by_name(socket_name)
@@ -914,6 +992,8 @@ class Nodegraph(Basegraph):
                 self.graph.connect_attributes(plug, socket)
             else:
                 self.graph.disconnect_attributes(plug, socket)
+        else:
+            LOG.info("Some attribute doesn't exist yet. Skipped connecting.")
 
     def on_host_connection_made(self, plug_name, socket_name):
         self.__handle_connection(plug_name, socket_name, 1)
