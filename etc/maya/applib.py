@@ -26,21 +26,66 @@ def get_attribute_tree(node):
     return parents
 
 
-def get_attributes_dict(selection):
+def get_used_attribute_type(attribute):
+    """ gets the currently used attribute type
 
-    get_connected_attributes_in_node_tree(selection)
+    Args:
+        attribute:
+
+    Returns: Corresponding our attribute naming it will return "socket" if an attribute
+    has incoming and outgoing connections, "plug" if it
+
+    """
+    sources = attribute.listConnections(s=True, d=False)
+    destinations = attribute.listConnections(s=False, d=True)
+
+    if sources and destinations:
+        return "slot"
+    elif sources:
+        return "socket"
+    else:
+        return "plug"
 
 
-def get_connected_attributes_in_node_tree(node, node_types=None):
+def get_connected_attributes_in_node_tree(node_or_nodes, node_types=None):
+    """ gets all attributes, its type, the node_type and data_type
 
-    all_connections = []
+    Args:
+        node_or_nodes: all connected attributes belonging to the node or nodes
+        node_types: if unspecified it will only add the node of the given node_types
 
-    def _get_connections(node):
+    Returns: dict {attribute: {"node_type": "some_node_type",
+                               "data_type": "some_data_type",
+                               "type": "some_attribute_type"
+                               }
+                  }
+    """
+    # find all nodes connected in tree and remove doubled
+    tree_nodes = list(set(pmc.listHistory(node_or_nodes, f=True, ac=True) + pmc.listHistory(node_or_nodes, ac=True)))
 
-        connections = node.listConnections(connections=True)
-        for connection in connections:
-            for _ in _get_connections(connection[0].node()):
-                all_connections.append(_)
+    # based on all nodes in tree get all related attributes
+    all_connected_attributes = []
+    for connection in pmc.listConnections(tree_nodes, c=True, p=True):
+        source, destination = connection
+        if source not in all_connected_attributes:
+            all_connected_attributes.append(source)
+        if destination not in all_connected_attributes:
+            all_connected_attributes.append(destination)
 
-    _get_connections(node)
-    print all_connections
+    # subdict skeleton every keys value in attribute should have
+    subdict = {"node_type": None,
+               "data_type": None,
+               "type": None}
+
+    attribute_dict = {}
+    for attribute in all_connected_attributes:
+        _ = subdict.copy()
+        _["node_type"] = attribute.nodeType()
+        _["data_type"] = attribute.type()
+        _["type"] = get_used_attribute_type(attribute)
+        if node_types and attribute.nodeType() in node_types:
+            attribute_dict[attribute.name()] = _
+        elif not node_types:
+            attribute_dict[attribute.name()] = _
+
+    return attribute_dict
