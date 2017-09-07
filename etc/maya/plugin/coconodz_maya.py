@@ -14,7 +14,6 @@ LOG.info("Launching {0}".format(PACKAGE_NAME))
 if VAR_NAME in os.environ:
     COCONODZ_PARENT = os.path.normpath(os.environ[VAR_NAME].split(PACKAGE_NAME, 1)[0].strip(";"))
     sys.path.append(COCONODZ_PARENT)
-    sys.path.append(os.path.join(COCONODZ_PARENT, PACKAGE_NAME, "site-packages"))
 
 from coconodz import Nodzgraph as NODZGRAPH
 from coconodz.etc.maya.ae.hooks import rebuild_attribute_editor
@@ -27,6 +26,7 @@ from coconodz.version import version
 PLUGIN_NAME = PACKAGE_NAME
 PLUGIN_VERSION = "0.1.0"
 COCONODZ_VERSION = version
+
 
 class MayaMenu(Menu):
     def __init__(self, menu_bar=maya_menu_bar()):

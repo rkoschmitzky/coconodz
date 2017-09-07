@@ -1,10 +1,6 @@
 import logging
 
-from Qt import (QtWidgets,
-                QtCore,
-                QtGui
-                )
-
+from coconodz import Qt
 import nodz_main
 
 from coconodz.lib import (BaseWindow,
@@ -92,13 +88,13 @@ class Basegraph(object):
     def remove_network(self, network):
         raise NotImplementedError
 
-    def clean_graph(self):
+    def clean_active_graph(self):
         raise NotImplementedError
 
-    def save_graph(self, filepath):
+    def save_active_graph(self, filepath):
         raise NotImplementedError
 
-    def load_graph(self, filepath):
+    def load_into_graph(self, filepath):
         raise NotImplementedError
 
     def load_configuration(self, configuration_file):
@@ -119,10 +115,10 @@ class Basegraph(object):
 
 class NodeItem(nodz_main.NodeItem):
 
-    signal_context_request = QtCore.Signal(object)
-    signal_attr_created = QtCore.Signal(object)
-    signal_socket_created = QtCore.Signal(object)
-    signal_plug_created = QtCore.Signal(object)
+    signal_context_request = Qt.QtCore.Signal(object)
+    signal_attr_created = Qt.QtCore.Signal(object)
+    signal_socket_created = Qt.QtCore.Signal(object)
+    signal_plug_created = Qt.QtCore.Signal(object)
 
     def __init__(self, name, alternate, preset, config):
         super(NodeItem, self).__init__(name, alternate, preset, config)
@@ -145,8 +141,8 @@ class NodeItem(nodz_main.NodeItem):
         self._node_type = value
 
     def mousePressEvent(self, event):
-        if (event.button() == QtCore.Qt.RightButton and
-            event.modifiers() == QtCore.Qt.ControlModifier):
+        if (event.button() == Qt.QtCore.Qt.RightButton and
+            event.modifiers() == Qt.QtCore.Qt.ControlModifier):
             self.signal_context_request.emit(self)
         else:
             super(NodeItem, self).mouseMoveEvent(event)
@@ -220,16 +216,16 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
     """
 
-    signal_node_created = QtCore.Signal(object)
-    signal_nodes_deleted = QtCore.Signal(object)
-    signal_after_node_created = QtCore.Signal(object)
-    signal_node_plug_created = QtCore.Signal(object)
-    signal_node_socket_created = QtCore.Signal(object)
-    signal_connection_made = QtCore.Signal(str, str, str, str)
-    signal_about_attribute_create = QtCore.Signal(str, str)
-    signal_context_request = QtCore.Signal(object)
-    signal_creation_field_request = QtCore.Signal()
-    signal_search_field_request = QtCore.Signal()
+    signal_node_created = Qt.QtCore.Signal(object)
+    signal_nodes_deleted = Qt.QtCore.Signal(object)
+    signal_after_node_created = Qt.QtCore.Signal(object)
+    signal_node_plug_created = Qt.QtCore.Signal(object)
+    signal_node_socket_created = Qt.QtCore.Signal(object)
+    signal_connection_made = Qt.QtCore.Signal(str, str, str, str)
+    signal_about_attribute_create = Qt.QtCore.Signal(str, str)
+    signal_context_request = Qt.QtCore.Signal(object)
+    signal_creation_field_request = Qt.QtCore.Signal()
+    signal_search_field_request = Qt.QtCore.Signal()
 
     def __init__(self, parent):
         super(Nodz, self).__init__(parent)
@@ -293,18 +289,18 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         if event.key() not in self.pressedKeys:
             self.pressedKeys.append(event.key())
-        if event.key() == QtCore.Qt.Key_Delete:
+        if event.key() == Qt.QtCore.Qt.Key_Delete:
             self._deleteSelectedNodes()
-        if (event.key() == QtCore.Qt.Key_F and
-            event.modifiers() == QtCore.Qt.NoModifier):
+        if (event.key() == Qt.QtCore.Qt.Key_F and
+            event.modifiers() == Qt.QtCore.Qt.NoModifier):
             self._focus()
-        if (event.key() == QtCore.Qt.Key_S and
-            event.modifiers() == QtCore.Qt.NoModifier):
+        if (event.key() == Qt.QtCore.Qt.Key_S and
+            event.modifiers() == Qt.QtCore.Qt.NoModifier):
             self._nodeSnap = True
-        if event.key() == QtCore.Qt.Key_Tab:
+        if event.key() == Qt.QtCore.Qt.Key_Tab:
             self.signal_creation_field_request.emit()
-        if (event.key() == QtCore.Qt.Key_F and
-            event.modifiers() == QtCore.Qt.ControlModifier):
+        if (event.key() == Qt.QtCore.Qt.Key_F and
+            event.modifiers() == Qt.QtCore.Qt.ControlModifier):
             self.signal_search_field_request.emit()
 
         # Emit signal.
@@ -320,8 +316,8 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         """
 
-        if (event.button() == QtCore.Qt.RightButton and
-            event.modifiers() == QtCore.Qt.NoModifier):
+        if (event.button() == Qt.QtCore.Qt.RightButton and
+            event.modifiers() == Qt.QtCore.Qt.NoModifier):
             self.signal_context_request.emit(self)
 
         super(Nodz, self).mousePressEvent(event)
@@ -588,10 +584,14 @@ class Nodegraph(Basegraph):
     def clear(self):
         self.graph.clearGraph()
 
+    def save_graph(self, filepath):
+        self.graph.saveGraph(filepath)
+
     @SuppressEvents(["node_created", "socket_created", "plug_created", "connection_made", "plug_connected", "socket_connected"])
     def display_host_node(self, node_name, node_type, attributes_dict={}, connections_dict={}):
         # @todo estimate creation position
         self.graph.create_node(name=node_name, node_type=node_type)
+        self._create_attributes(attributes_dict)
 
     @SuppressEvents("node_deleted")
     def undisplay_node(self, node_name):

@@ -4,7 +4,7 @@ except:
     from shiboken2 import wrapInstance
 #todo add logging
 
-from Qt import QtWidgets
+from coconodz import Qt
 
 import maya.OpenMayaUI as omui
 
@@ -32,7 +32,7 @@ def maya_main_window():
     ptr = omui.MQtUtil.mainWindow()
     if not ptr:
         raise RuntimeError('No Maya window found.')
-    window = wrapinstance(long(ptr), QtWidgets.QMainWindow)
+    window = wrapinstance(long(ptr), Qt.QtWidgets.QMainWindow)
     return window
 
 
@@ -43,7 +43,7 @@ def maya_menu_bar():
 
     """
     for child in maya_main_window().children():
-        if isinstance(child, QtWidgets.QMenuBar):
+        if isinstance(child, Qt.QtWidgets.QMenuBar):
             return child
 
 

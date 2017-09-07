@@ -8,12 +8,17 @@ __author__ = "Rico Koschmitzky"
 __email__ = "contact@ricokoschmitzky.com"
 
 
-_ERROR_MSG = "Looks like you want to run CocoNodz in a unknown environment." + \
+ERROR_MSG = "Looks like you want to run CocoNodz in a unknown environment." + \
             "Please email the author {0} : {1}".format(__author__, __email__)
 
-_LOG = logging.getLogger(name="CocoNodz")
-#_LOG.addHandler(logging.StreamHandler())
-#_LOG.setLevel(logging.DEBUG)
+LOG = logging.getLogger(name="CocoNodz")
+LOG.addHandler(logging.StreamHandler(sys.__stderr__))
+LOG.setLevel(logging.DEBUG)
+
+sys.path.append(os.path.join(__path__[0], "site-packages"))
+
+import Qt as Qt
+
 
 def _import_expected(module_name):
     """ checks if an import of a specified module is possible
@@ -28,11 +33,11 @@ def _import_expected(module_name):
         __import__(module_name)
         return True
     except ImportError:
-        _LOG.error("Not able to import expected host modules.", exc_info=True)
+        LOG.error("Not able to import expected host modules.", exc_info=True)
         return False
 
 
-_LOG.info("Initializing version {0}".format(version))
+LOG.info("Initializing version {0}".format(version))
 
 hosts = []
 
@@ -47,8 +52,9 @@ def _get_hosts():
     return hosts
 
 exec_filename = os.path.basename(sys.executable)
-_LOG.debug("Executable: {0}".format(sys.executable))
-if exec_filename:
+LOG.debug("Executable: {0}".format(sys.executable))
+
+if exec_filename and not os.environ.get("COCONODZ_IGNORE_HOST", 0):
     exec_name = os.path.splitext(exec_filename)[0]
 
     # detect executable by name
@@ -57,16 +63,16 @@ if exec_filename:
     # modules to detect the host application
     if exec_name and "maya" in exec_name:
         if _import_expected("maya"):
-            _LOG.info("Initializing Nodegraph Configuration for Maya")
+            LOG.info("Initializing Nodegraph Configuration for Maya")
             host = "maya"
     elif exec_name and "katana" in exec_name:
         if _import_expected("Katana"):
-            _LOG.info("Initializing Nodegraph Configuration for Katana")
+            LOG.info("Initializing Nodegraph Configuration for Katana")
             host = "katana"
     else:
         hosts = _get_hosts()
         if len(hosts) != 1:
-            raise NotImplementedError("Not able to detect proper host. {0}".format(_ERROR_MSG))
+            raise NotImplementedError("Not able to detect proper host. {0}".format(ERROR_MSG))
         else:
             host = hosts[0]
 
@@ -74,4 +80,8 @@ if exec_filename:
         from coconodz.etc.maya.nodegraph import Nodzgraph as _Nodzgraph
         Nodzgraph = _Nodzgraph()
     elif host == "katana":
-        raise NotImplementedError
+        #raise NotImplementedError
+        pass
+else:
+    from coconodz import nodegraph
+    Nodzgraph = nodegraph.Nodegraph()

@@ -4,10 +4,7 @@ import os
 import pprint
 import sys
 
-from Qt import (QtWidgets,
-                QtGui,
-                QtCore
-               )
+from coconodz import Qt
 
 
 LOG = logging.getLogger(name="CocoNodz.nodegraph")
@@ -39,7 +36,7 @@ class SafeOpen(object):
             self.f.close()
 
 
-class BaseWindow(QtWidgets.QMainWindow):
+class BaseWindow(Qt.QtWidgets.QMainWindow):
     """ Sets up a simple Base window
 
     """
@@ -75,20 +72,20 @@ class BaseWindow(QtWidgets.QMainWindow):
         Returns:
 
         """
-        self._central_widget = QtWidgets.QWidget(self.__parent)
-        self._central_layout = QtWidgets.QVBoxLayout()
+        self._central_widget = Qt.QtWidgets.QWidget(self.__parent)
+        self._central_layout = Qt.QtWidgets.QVBoxLayout()
         self.setWindowTitle(self.TITLE)
         self.setCentralWidget(self.central_widget)
         if not os.name == 'nt':
-            self.setWindowFlags(QtCore.Qt.Tool)
+            self.setWindowFlags(Qt.QtCore.Qt.Tool)
 
         self.central_widget.setLayout(self.central_layout)
 
 
-class ContextWidget(QtWidgets.QMenu):
+class ContextWidget(Qt.QtWidgets.QMenu):
 
-    signal_available_items_changed = QtCore.Signal()
-    signal_opened = QtCore.Signal()
+    signal_available_items_changed = Qt.QtCore.Signal()
+    signal_opened = Qt.QtCore.Signal()
 
     def __init__(self, parent):
         super(ContextWidget, self).__init__(parent)
@@ -117,7 +114,7 @@ class ContextWidget(QtWidgets.QMenu):
 
     def _update_context(self):
         self.clear()
-        action = QtWidgets.QWidgetAction(self)
+        action = Qt.QtWidgets.QWidgetAction(self)
         action.setDefaultWidget(self.context)
         self.addAction(action)
 
@@ -136,7 +133,7 @@ class ContextWidget(QtWidgets.QMenu):
 
         """
         self.signal_opened.emit()
-        pos = QtGui.QCursor.pos()
+        pos = Qt.QtGui.QCursor.pos()
         self.move(pos.x(), pos.y())
         self.exec_()
 
@@ -160,15 +157,15 @@ class GraphContext(ContextWidget):
         Returns:
 
         """
-        assert isinstance(button, QtWidgets.QPushButton), \
-            self._expect_msg.format(QtWidgets.QPushButton, type(button))
+        assert isinstance(button, Qt.QtWidgets.QPushButton), \
+            self._expect_msg.format(Qt.QtWidgets.QPushButton, type(button))
         self.central_layout.addWidget(button)
         LOG.info("Added button {0}".format(button))
 
     def setup_ui(self):
         super(GraphContext, self).setup_ui()
-        widget = QtWidgets.QWidget(self)
-        layout = QtWidgets.QVBoxLayout(widget)
+        widget = Qt.QtWidgets.QWidget(self)
+        layout = Qt.QtWidgets.QVBoxLayout(widget)
         for button in self.available_items:
             layout.addWidget(button)
         self.context = widget
@@ -187,7 +184,7 @@ class AttributeContext(ContextWidget):
 
     """
 
-    signal_input_accepted = QtCore.Signal(str, str)
+    signal_input_accepted = Qt.QtCore.Signal(str, str)
 
     def __init__(self, parent, mode=""):
         super(AttributeContext, self).__init__(parent)
@@ -239,7 +236,7 @@ class AttributeContext(ContextWidget):
         # recursive items addition
         def _add_items(parent, data):
             for key, value in data.iteritems():
-                tree_item = QtWidgets.QTreeWidgetItem(parent)
+                tree_item = Qt.QtWidgets.QTreeWidgetItem(parent)
                 tree_item.setText(0, key)
                 tree_widget.addTopLevelItem(tree_item)
                 tree_items.append(tree_item)
@@ -248,12 +245,12 @@ class AttributeContext(ContextWidget):
                         value = list([value])
                     if isinstance(value, (list, tuple)):
                         for member in value:
-                            child = QtWidgets.QTreeWidgetItem(tree_item)
+                            child = Qt.QtWidgets.QTreeWidgetItem(tree_item)
                             child.setText(0, member)
                             tree_item.addChild(child)
                             tree_items.append(child)
                     if isinstance(value, dict):
-                        if not isinstance(parent, QtWidgets.QTreeWidget):
+                        if not isinstance(parent, Qt.QtWidgets.QTreeWidget):
                             parent.addChild(tree_item)
                         else:
                             _add_items(tree_item, value)
@@ -264,20 +261,20 @@ class AttributeContext(ContextWidget):
     def setup_ui(self):
         super(AttributeContext, self).setup_ui()
 
-        widget = QtWidgets.QWidget(self)
-        filter_layout = QtWidgets.QHBoxLayout()
-        label = QtWidgets.QLabel("Filter:")
-        mask = QtWidgets.QLineEdit()
+        widget = Qt.QtWidgets.QWidget(self)
+        filter_layout = Qt.QtWidgets.QHBoxLayout()
+        label = Qt.QtWidgets.QLabel("Filter:")
+        mask = Qt.QtWidgets.QLineEdit()
         filter_layout.addWidget(label)
         filter_layout.addWidget(mask)
 
-        layout = QtWidgets.QVBoxLayout(widget)
+        layout = Qt.QtWidgets.QVBoxLayout(widget)
         layout.addLayout(filter_layout)
 
-        tree = QtWidgets.QTreeWidget()
+        tree = Qt.QtWidgets.QTreeWidget()
         tree.setColumnCount(self._column + 1)
         tree.setHeaderLabels([self.mode])
-        tree.sortItems(self._column, QtCore.Qt.AscendingOrder)
+        tree.sortItems(self._column, Qt.QtCore.Qt.AscendingOrder)
 
         layout.addWidget(tree)
         self._populate_tree(tree)
@@ -319,7 +316,7 @@ class AttributeContext(ContextWidget):
             if item.parent():
                 _unhide_parent(item.parent())
 
-        iterator = QtWidgets.QTreeWidgetItemIterator(self.tree_widget, QtWidgets.QTreeWidgetItemIterator.All)
+        iterator = Qt.QtWidgets.QTreeWidgetItemIterator(self.tree_widget, Qt.QtWidgets.QTreeWidgetItemIterator.All)
         while iterator.value():
             iterator.value().setHidden(True)
             iterator += 1
@@ -328,13 +325,13 @@ class AttributeContext(ContextWidget):
         input_string = str(self.mask_widget.text())
         if input_string != "":
             matched_items = self.tree_widget.findItems(input_string,
-                                             (QtCore.Qt.MatchContains | QtCore.Qt.MatchRecursive | QtCore.Qt.MatchCaseSensitive))
+                                             (Qt.QtCore.Qt.MatchContains | Qt.QtCore.Qt.MatchRecursive | Qt.QtCore.Qt.MatchCaseSensitive))
             for item in matched_items:
                 _unhide_parent(item)
         else:
             # unfortunately an empty string returns a match for all items
             # in this case we will show all items again
-            iterator = QtWidgets.QTreeWidgetItemIterator(self.tree_widget, QtWidgets.QTreeWidgetItemIterator.All)
+            iterator = Qt.QtWidgets.QTreeWidgetItemIterator(self.tree_widget, Qt.QtWidgets.QTreeWidgetItemIterator.All)
             while iterator.value():
                 iterator.value().setHidden(False)
                 iterator += 1
@@ -344,7 +341,7 @@ class SearchField(ContextWidget):
     """ simple SearchField Widget we will use in the nodegraph
 
     """
-    signal_input_accepted = QtCore.Signal(str)
+    signal_input_accepted = Qt.QtCore.Signal(str)
 
     def __init__(self, parent):
         super(SearchField, self).__init__(parent)
@@ -361,9 +358,9 @@ class SearchField(ContextWidget):
         Returns:
 
         """
-        completer = QtWidgets.QCompleter(self.available_items)
-        completer.setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
-        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        completer = Qt.QtWidgets.QCompleter(self.available_items)
+        completer.setCompletionMode(Qt.QtWidgets.QCompleter.PopupCompletion)
+        completer.setCaseSensitivity(Qt.QtCore.Qt.CaseInsensitive)
         line_edit_widget.setCompleter(completer)
 
     def setup_ui(self):
@@ -373,7 +370,7 @@ class SearchField(ContextWidget):
         """
         super(SearchField, self).setup_ui()
         # set search field
-        self.mask = QtWidgets.QLineEdit(self)
+        self.mask = Qt.QtWidgets.QLineEdit(self)
         self.context = self.mask
         self.mask.setFocus()
 
@@ -399,7 +396,7 @@ class SearchField(ContextWidget):
         self._setup_completer(self.mask)
 
 
-class BackdropItem(QtWidgets.QGraphicsRectItem):
+class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
 
     def __init__(self, *args, **kwargs):
         super(BackdropItem, self).__init(*args, **kwargs)
@@ -407,7 +404,7 @@ class BackdropItem(QtWidgets.QGraphicsRectItem):
         raise NotImplementedError
 
 
-class Menu(QtWidgets.QMenu):
+class Menu(Qt.QtWidgets.QMenu):
 
     MENU_NAME = "CocoNodz"
 
