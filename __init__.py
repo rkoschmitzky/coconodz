@@ -2,7 +2,6 @@ import logging
 import os
 import sys
 
-from coconodz.version import version
 
 __author__ = "Rico Koschmitzky"
 __email__ = "contact@ricokoschmitzky.com"
@@ -12,12 +11,25 @@ ERROR_MSG = "Looks like you want to run CocoNodz in a unknown environment." + \
             "Please email the author {0} : {1}".format(__author__, __email__)
 
 LOG = logging.getLogger(name="CocoNodz")
-LOG.addHandler(logging.StreamHandler(sys.__stderr__))
+LOG.addHandler(logging.StreamHandler(sys.__stdout__))
 LOG.setLevel(logging.DEBUG)
 
-sys.path.append(os.path.join(__path__[0], "site-packages"))
+from coconodz.version import version
+
+# appending Qt.py for CocoNodz
+try:
+    sys.path.append(os.path.join(__path__[0], "site-packages"))
+except:
+    pass
 
 import Qt as Qt
+
+# check if we can have a for standalone execution QApplication
+try:
+    application = Qt.QtWidgets.QApplication([])
+except:
+    application = None
+    LOG.debug("Retrieving QApplication")
 
 
 def _import_expected(module_name):
@@ -54,7 +66,7 @@ def _get_hosts():
 exec_filename = os.path.basename(sys.executable)
 LOG.debug("Executable: {0}".format(sys.executable))
 
-if exec_filename and not os.environ.get("COCONODZ_IGNORE_HOST", 0):
+if exec_filename:
     exec_name = os.path.splitext(exec_filename)[0]
 
     # detect executable by name
@@ -70,18 +82,24 @@ if exec_filename and not os.environ.get("COCONODZ_IGNORE_HOST", 0):
             LOG.info("Initializing Nodegraph Configuration for Katana")
             host = "katana"
     else:
-        hosts = _get_hosts()
-        if len(hosts) != 1:
-            raise NotImplementedError("Not able to detect proper host. {0}".format(ERROR_MSG))
+
+        if os.environ.get("COCONODZ_IGNORE_HOST", 0):
+            host = "no_host"
         else:
-            host = hosts[0]
+            hosts = _get_hosts()
+            if len(hosts) != 1:
+                raise NotImplementedError("Not able to detect proper host. {0}".format(ERROR_MSG))
+
+            elif len(hosts) == 1:
+                    host = hosts[0]
+            else:
+                host = "no_host"
 
     if host == "maya":
         from coconodz.etc.maya.nodegraph import Nodzgraph as _Nodzgraph
         Nodzgraph = _Nodzgraph()
     elif host == "katana":
-        #raise NotImplementedError
-        pass
-else:
-    from coconodz import nodegraph
-    Nodzgraph = nodegraph.Nodegraph()
+        raise NotImplementedError
+    elif host == "no_host":
+        from coconodz import nodegraph
+        Nodzgraph = nodegraph.Nodegraph())

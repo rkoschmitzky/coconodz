@@ -1,25 +1,6 @@
-try:
-    from shiboken import wrapInstance
-except:
-    from shiboken2 import wrapInstance
-#todo add logging
-
 from coconodz import Qt
 
 import maya.OpenMayaUI as omui
-
-
-def wrapinstance(*args, **kwargs):
-    """ shiboken and shiboken2 compatible wrapInstance function
-
-    Args:
-        *args:
-        **kwargs:
-
-    Returns:
-
-    """
-    return wrapInstance(*args, **kwargs)
 
 
 def maya_main_window():
@@ -32,7 +13,7 @@ def maya_main_window():
     ptr = omui.MQtUtil.mainWindow()
     if not ptr:
         raise RuntimeError('No Maya window found.')
-    window = wrapinstance(long(ptr), Qt.QtWidgets.QMainWindow)
+    window = Qt.QtCompat.wrapInstance(long(ptr), Qt.QtWidgets.QMainWindow)
     return window
 
 
