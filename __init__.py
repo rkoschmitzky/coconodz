@@ -102,4 +102,4 @@ if exec_filename:
         raise NotImplementedError
     elif host == "no_host":
         from coconodz import nodegraph
-        Nodzgraph = nodegraph.Nodegraph())
+        Nodzgraph = nodegraph.Nodegraph()
