@@ -99,7 +99,8 @@ if exec_filename:
         from coconodz.etc.maya.nodegraph import Nodzgraph as _Nodzgraph
         Nodzgraph = _Nodzgraph()
     elif host == "katana":
-        raise NotImplementedError
+        from coconodz.etc.katana.nodegraph import Nodzgraph as _Nodzgraph
+        Nodzgraph = _Nodzgraph()
     elif host == "no_host":
         from coconodz import nodegraph
         Nodzgraph = nodegraph.Nodegraph()
