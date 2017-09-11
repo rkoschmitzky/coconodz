@@ -33,7 +33,7 @@ class Basegraph(object):
 
     @property
     def all_nodes(self):
-        return self._all_nodes.items()
+        return [_[-1] for _ in self._all_nodes.items()]
 
     @property
     def all_node_names(self):
@@ -41,7 +41,7 @@ class Basegraph(object):
 
     @property
     def selected_nodes(self):
-        return [_[-1] for _ in self.all_nodes if _[-1].isSelected()]
+        return [_ for _ in self.all_nodes if _.isSelected()]
 
     @property
     def selected_node_names(self):
@@ -583,6 +583,8 @@ class Nodegraph(Basegraph):
 
     def clear(self):
         self.graph.clearGraph()
+        # clean nodes_dict
+        self._all_nodes = {}
 
     def save_graph(self, filepath):
         self.graph.saveGraph(filepath)
@@ -918,6 +920,7 @@ class Nodegraph(Basegraph):
         self.graph.signal_about_attribute_create.emit(node_name, attribute_name)
 
     def on_node_created(self, node):
+        self.nodes_dict[node.name] = node
         if node:
             self.graph.signal_after_node_created.emit(node)
 
