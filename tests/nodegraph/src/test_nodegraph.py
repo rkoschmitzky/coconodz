@@ -19,12 +19,16 @@
 #         Nodzgraph.open()
 #         application.exec_()
 #
+import os
+import tempfile
+import time
 import unittest
 from unittest.case import safe_repr
 
 import coconodz
 from coconodz import Nodzgraph
 from coconodz.lib import DictDotLookup
+
 
 class TestCase(unittest.TestCase):
     """ extending unittests.TestCase class
@@ -85,6 +89,24 @@ class ConfigurationCase(TestCase):
         self.assertHasAttribute(Nodzgraph.configuration, "node_default")
         self.assertHasAttribute(Nodzgraph.configuration, "attr_default")
         self.assertHasAttribute(Nodzgraph.configuration, "datatype_default")
+
+    def test_load_configuration(self):
+        old_width = Nodzgraph.configuration.scene_width
+        new_width = old_width + 100
+        Nodzgraph.configuration.scene_width = new_width
+        self.assertEqual(new_width, Nodzgraph.configuration.scene_width)
+
+        Nodzgraph.load_configuration(os.path.join(os.path.dirname(coconodz.__file__), "nodegraph.config"))
+        self.assertEqual(Nodzgraph.configuration.scene_width, old_width)
+
+    def test_save_configuration(self):
+        tmp_dir = tempfile.gettempdir()
+        config_file = Nodzgraph.save_configuration(os.path.join(tmp_dir, str(time.time()) + "_coconodz.config"))
+        self.assertTrue(os.path.exists(config_file))
+        try:
+            os.remove(config_file)
+        except OSError:
+            raise
 
 
 class NodegraphCase(TestCase):

@@ -500,6 +500,7 @@ class ConfiguationMixin(object):
         assert os.path.exists(_dir), "Directory {0} doesn't exist.".format(_dir)
 
         write_json(filepath, self.configuration_data)
+        return filepath
 
 
 class DictDotLookup(object):

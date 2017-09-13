@@ -567,7 +567,8 @@ class Nodegraph(Basegraph):
         Returns:
 
         """
-        self.graph.save_configuration(filepath)
+        LOG.info("Saving configuration to {0}".format(filepath))
+        return self.graph.save_configuration(filepath)
 
     def load_configuration(self, configuration_file):
         """
