@@ -20,13 +20,77 @@
 #         application.exec_()
 #
 import unittest
+from unittest.case import safe_repr
 
 import coconodz
 from coconodz import Nodzgraph
+from coconodz.lib import DictDotLookup
+
+class TestCase(unittest.TestCase):
+    """ extending unittests.TestCase class
+
+    """
+    def assertHasAttribute(self, obj, name, msg=None):
+        """Fail if the two objects are equal as determined by the '=='
+           operator.
+        """
+        if hasattr(obj, name) == False:
+            msg = self._formatMessage(msg, '%s has no attribute named %s' % (safe_repr(obj),
+                                                                             safe_repr(name)
+                                                                             )
+                                      )
+            raise self.failureException(msg)
 
 
-class NodegraphCase(unittest.TestCase):
+class ConfigurationCase(TestCase):
+    """ test the configuration
 
+    """
+
+    def test_has_configuration(self):
+        self.assertHasAttribute(Nodzgraph, "configuration")
+
+    def test_is_expected_instance(self):
+        self.assertIsInstance(Nodzgraph.configuration, DictDotLookup)
+
+    def test_parent_presets(self):
+        self.assertHasAttribute(Nodzgraph.configuration, "scene_width")
+        self.assertHasAttribute(Nodzgraph.configuration, "scene_height")
+        self.assertHasAttribute(Nodzgraph.configuration, "grid_size")
+        self.assertHasAttribute(Nodzgraph.configuration, "antialiasing")
+        self.assertHasAttribute(Nodzgraph.configuration, "antialiasing_boost")
+        self.assertHasAttribute(Nodzgraph.configuration, "smooth_pixmap")
+        self.assertHasAttribute(Nodzgraph.configuration, "attribute_order")
+        self.assertHasAttribute(Nodzgraph.configuration, "available_node_types")
+        self.assertHasAttribute(Nodzgraph.configuration, "default_attribute_name")
+        self.assertHasAttribute(Nodzgraph.configuration, "default_attribute_data_type")
+        self.assertHasAttribute(Nodzgraph.configuration, "default_socket")
+        self.assertHasAttribute(Nodzgraph.configuration, "default_plug")
+        self.assertHasAttribute(Nodzgraph.configuration, "node_font")
+        self.assertHasAttribute(Nodzgraph.configuration, "node_font_size")
+        self.assertHasAttribute(Nodzgraph.configuration, "attr_font")
+        self.assertHasAttribute(Nodzgraph.configuration, "attr_font_size")
+        self.assertHasAttribute(Nodzgraph.configuration, "mouse_bounding_box")
+        self.assertHasAttribute(Nodzgraph.configuration, "node_width")
+        self.assertHasAttribute(Nodzgraph.configuration, "node_height")
+        self.assertHasAttribute(Nodzgraph.configuration, "node_radius")
+        self.assertHasAttribute(Nodzgraph.configuration, "node_border")
+        self.assertHasAttribute(Nodzgraph.configuration, "node_attr_height")
+        self.assertHasAttribute(Nodzgraph.configuration, "connection_width")
+        self.assertHasAttribute(Nodzgraph.configuration, "alternate_value")
+        self.assertHasAttribute(Nodzgraph.configuration, "grid_color")
+        self.assertHasAttribute(Nodzgraph.configuration, "slot_border")
+        self.assertHasAttribute(Nodzgraph.configuration, "non_connectable_color")
+        self.assertHasAttribute(Nodzgraph.configuration, "connection_color")
+        self.assertHasAttribute(Nodzgraph.configuration, "node_default")
+        self.assertHasAttribute(Nodzgraph.configuration, "attr_default")
+        self.assertHasAttribute(Nodzgraph.configuration, "datatype_default")
+
+
+class NodegraphCase(TestCase):
+    """ test the nodegraphs functionality
+
+    """
     def setUp(self):
         Nodzgraph.clear()
 
@@ -74,13 +138,13 @@ class NodegraphCase(unittest.TestCase):
         self.assertTrue(node.isSelected())
 
     def test_default_attribute(self):
-        name = Nodzgraph.graph.configuration.default_attribute_name
-        data_type = Nodzgraph.graph.configuration.default_attribute_data_type
+        name = Nodzgraph.configuration.default_attribute_name
+        data_type = Nodzgraph.configuration.default_attribute_data_type
         node = _create_test_node()
-        if Nodzgraph.graph.configuration.default_plug:
+        if Nodzgraph.configuration.default_plug:
             self.assertIn(name, node.plugs)
             self.assertEqual(node.plugs[name].dataType, data_type)
-        if Nodzgraph.graph.configuration.default_socket:
+        if Nodzgraph.configuration.default_socket:
             self.assertIn(name, node.sockets)
             self.assertEqual(node.sockets[name].dataType, data_type)
 

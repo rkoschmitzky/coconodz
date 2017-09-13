@@ -45,10 +45,10 @@ class Nodzgraph(nodegraph.Nodegraph):
         self.append_available_node_categories()
 
         # setting the default attribute
-        self.graph.configuration.default_slot = True
-        self.graph.configuration.default_plug = True
-        self.graph.configuration.default_attribute_name = "message"
-        self.graph.configuration.default_attribute_data_type = "message"
+        self.configuration.default_slot = True
+        self.configuration.default_plug = True
+        self.configuration.default_attribute_name = "message"
+        self.configuration.default_attribute_data_type = "message"
 
     def open(self):
         """ opens the Nodegraph with dockable configuration settings
