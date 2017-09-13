@@ -44,6 +44,12 @@ class Nodzgraph(nodegraph.Nodegraph):
         # add node gategories
         self.append_available_node_categories()
 
+        # setting the default attribute
+        self.graph.configuration.default_slot = True
+        self.graph.configuration.default_plug = True
+        self.graph.configuration.default_attribute_name = "message"
+        self.graph.configuration.default_attribute_data_type = "message"
+
     def open(self):
         """ opens the Nodegraph with dockable configuration settings
 
@@ -128,9 +134,6 @@ class Nodzgraph(nodegraph.Nodegraph):
 
     def on_creation_input_accepted(self, node_type):
         pmc.createNode(node_type)
-
-    def on_after_node_created(self, node):
-        node.add_attribute(name="message", socket=False, data_type="message")
 
     def on_context_request(self, widget):
         _widget = super(Nodzgraph, self).on_context_request(widget)

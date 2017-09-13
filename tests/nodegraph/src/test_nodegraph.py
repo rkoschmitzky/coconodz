@@ -49,30 +49,40 @@ class NodegraphCase(unittest.TestCase):
         self.assertListEqual([_node], Nodzgraph.selected_nodes)
 
     def test_get_node_by_name(self):
-        _name = "test_name"
-        self.assertEqual(_create_test_node(name=_name), Nodzgraph.get_node_by_name(_name))
-        _name = "another_test_name"
-        self.assertEqual(_create_test_node(name=_name), Nodzgraph.get_node_by_name(_name))
+        name = "test_name"
+        self.assertEqual(_create_test_node(name=name), Nodzgraph.get_node_by_name(name))
+        name = "another_test_name"
+        self.assertEqual(_create_test_node(name=name), Nodzgraph.get_node_by_name(name))
 
     def test_creation_field_input_accepted(self):
         self.assertIsInstance(Nodzgraph.creation_field.available_items, list)
-        _node_type = "some_node_type"
-        Nodzgraph.graph.creation_field.available_items = [_node_type]
-        Nodzgraph.creation_field.signal_input_accepted.emit(_node_type)
-        self.assertEqual(_node_type, Nodzgraph.all_nodes[0].node_type)
+        node_type = "some_node_type"
+        Nodzgraph.graph.creation_field.available_items = [node_type]
+        Nodzgraph.creation_field.signal_input_accepted.emit(node_type)
+        self.assertEqual(node_type, Nodzgraph.all_nodes[0].node_type)
 
     def test_search_field_available_items(self):
         self.assertIsInstance(Nodzgraph.search_field.available_items, list)
-        _name = "test_search_field"
-        node = _create_test_node()
+        name = "test_search_field"
+        node = _create_test_node(name)
 
         # mimic search_field open
         Nodzgraph.on_search_field_opened()
         self.assertListEqual([node.name], Nodzgraph.search_field.available_items)
 
-        Nodzgraph.search_field.signal_input_accepted.emit(_name)
+        Nodzgraph.search_field.signal_input_accepted.emit(name)
         self.assertTrue(node.isSelected())
 
+    def test_default_attribute(self):
+        name = Nodzgraph.graph.configuration.default_attribute_name
+        data_type = Nodzgraph.graph.configuration.default_attribute_data_type
+        node = _create_test_node()
+        if Nodzgraph.graph.configuration.default_plug:
+            self.assertIn(name, node.plugs)
+            self.assertEqual(node.plugs[name].dataType, data_type)
+        if Nodzgraph.graph.configuration.default_socket:
+            self.assertIn(name, node.sockets)
+            self.assertEqual(node.sockets[name].dataType, data_type)
 
 
 def _create_test_node(name="some", node_type="some"):

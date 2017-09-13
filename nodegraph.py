@@ -926,7 +926,11 @@ class Nodegraph(Basegraph):
 
     def on_after_node_created(self, node):
         # create default plug on node
-        node.add_attribute(name="test", data_type="test")
+        if self.configuration.default_plug or self.configuration.default_socket:
+            node.add_attribute(name=self.configuration.default_attribute_name,
+                               plug=self.configuration.default_plug,
+                               socket=self.configuration.default_socket,
+                               data_type=self.configuration.default_attribute_data_type)
 
     def on_nodes_deleted(self, nodeitems_list):
         pass
