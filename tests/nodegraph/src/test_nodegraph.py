@@ -1,24 +1,3 @@
-# if __name__ == '__main__':
-#     # open Nodzgraph standalone
-#     from coconodz import (Nodzgraph,
-#                           application
-#                           )
-#
-#     if application:
-#
-#
-#         Nodzgraph.graph.creation_field.available_items = ["lambert", "blinn", "surfaceShader", "shadingEngine"]
-#
-#
-#         Nodzgraph.graph.create_node("lambert1", node_type="lambert")
-#         Nodzgraph.graph.create_node("lambert2", node_type="lambert")
-#         Nodzgraph.graph.create_node("blinn1", node_type="blinn")
-#         Nodzgraph.graph.create_node("surfaceShader1", node_type="surfaceShader")
-#         Nodzgraph.graph.create_node("shadingEngine1", node_type="shadingEngine")
-#
-#         Nodzgraph.open()
-#         application.exec_()
-#
 import os
 import tempfile
 import time
@@ -27,7 +6,9 @@ from unittest.case import safe_repr
 
 import coconodz
 from coconodz import Nodzgraph
-from coconodz.lib import DictDotLookup
+from coconodz.lib import (DictDotLookup,
+                          read_json
+                          )
 
 
 class TestCase(unittest.TestCase):
@@ -113,6 +94,11 @@ class NodegraphCase(TestCase):
     """ test the nodegraphs functionality
 
     """
+
+    @classmethod
+    def setUpClass(cls):
+        cls._test_attrs_data = read_json(os.path.join(os.path.dirname(coconodz.__file__),
+                                                      "tests", "nodegraph", "ref", "attrs.json"))
     def setUp(self):
         Nodzgraph.clear()
 
@@ -169,6 +155,40 @@ class NodegraphCase(TestCase):
         if Nodzgraph.configuration.default_socket:
             self.assertIn(name, node.sockets)
             self.assertEqual(node.sockets[name].dataType, data_type)
+
+    def test_create_attributes(self):
+        node_types = ["lambert", "blinn", "surfaceShader", "shadingEngine", "file"]
+        # define possible (and for attr creation expected nodetypes)
+        Nodzgraph.creation_field.available_items = node_types
+        # hardcoded attributes testing
+        # have to exist within the _test_attrs_data
+        nodes_to_create = {"lambert1": node_types[0],
+                           "lambert2": node_types[0],
+                           "blinn1": node_types[1],
+                           "surfaceShader1": node_types[2],
+                           "surfaceShader1SG": node_types[3],
+                           "file1": node_types[4]
+                           }
+        for key, value in nodes_to_create.iteritems():
+            Nodzgraph.graph.create_node(key, node_type=value)
+
+        # create the attributes
+        Nodzgraph._create_attributes(self._test_attrs_data)
+
+        # compare created attributes with the expected from _test_attrs_data
+        # only considering nodes in node_to_create
+        for attr, attr_data in self._test_attrs_data.iteritems():
+            node_name = attr.split(".")[0]
+            attr_name = attr.split(".")[1]
+            if node_name in nodes_to_create:
+                self.assertIn(node_name, Nodzgraph.nodes_dict)
+                node = Nodzgraph.get_node_by_name(node_name)
+                if attr_data["type"] == ("plug" or "slot"):
+                    self.assertIn(attr_name, node.plugs)
+                    self.assertEqual(node.plugs[attr_name].dataType,  attr_data["data_type"])
+                if attr_data["type"] == ("socket" or "slot"):
+                    self.assertIn(attr_name, node.sockets)
+                    self.assertEqual(node.sockets[attr_name].dataType, attr_data["data_type"])
 
 
 def _create_test_node(name="some", node_type="some"):

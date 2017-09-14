@@ -676,7 +676,7 @@ class Nodegraph(Basegraph):
             else:
                 LOG.info("Node '{0}' doesn't exist in graph yet.".format(node))
 
-        for key, value in attributes_dict:
+        for key, value in attributes_dict.iteritems():
             msg = "Unexpected formatting. Expected dictionary holding a 'type' and 'data_type' key"
             assert (isinstance(value, dict) and "type" in value), msg
             assert (isinstance(value, dict) and "data_type" in value), msg
