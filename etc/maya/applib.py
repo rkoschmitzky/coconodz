@@ -89,3 +89,10 @@ def get_connected_attributes_in_node_tree(node_or_nodes, node_types=None):
             attribute_dict[attribute.name()] = _
 
     return attribute_dict
+
+
+def get_connections(node_or_nodes):
+
+    # find all nodes connected in tree and remove doubled
+    tree_nodes = list(set(pmc.listHistory(node_or_nodes, f=True, ac=True) + pmc.listHistory(node_or_nodes, ac=True)))
+    return {str(x): str(y) for x, y in pmc.listConnections(tree_nodes, c=True, p=True, s=False)}

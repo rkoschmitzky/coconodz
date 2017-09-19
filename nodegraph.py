@@ -685,8 +685,13 @@ class Nodegraph(Basegraph):
 
 
     def _create_connections(self, connections_dict):
-        for plug, socket in connections_dict:
-            self.__handle_connection(plug, socket, True)
+        for plug, socket in connections_dict.iteritems():
+            self.__assert_attribute(plug)
+            self.__assert_attribute(socket)
+            source_node = self.get_node_by_name(plug.split(".")[0])
+            destination_node = self.get_node_by_name(socket.split(".")[0])
+            if source_node and destination_node:
+                self.__handle_connection(plug, socket, True)
 
     def register_events(self):
         """ setup events by connecting all signals and slots
@@ -993,6 +998,8 @@ class Nodegraph(Basegraph):
         self.__assert_attribute(plug_name)
         self.__assert_attribute(socket_name)
 
+        _msg = "{0} '{1}' doesn't exist yet. Skipped connecting."
+
         plug = self.get_plug_by_name(plug_name)
         socket = self.get_socket_by_name(socket_name)
         if plug and socket:
@@ -1000,8 +1007,11 @@ class Nodegraph(Basegraph):
                 self.graph.connect_attributes(plug, socket)
             else:
                 self.graph.disconnect_attributes(plug, socket)
-        else:
-            LOG.info("Some attribute doesn't exist yet. Skipped connecting.")
+        if not plug:
+            LOG.warning(_msg.format("plug", plug_name))
+        if not socket:
+            LOG.warning(_msg.format("socket", socket_name))
+
 
     def on_host_connection_made(self, plug_name, socket_name):
         self.__handle_connection(plug_name, socket_name, 1)

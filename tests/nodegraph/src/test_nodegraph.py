@@ -5,7 +5,7 @@ import unittest
 from unittest.case import safe_repr
 
 import coconodz
-from coconodz import Nodzgraph
+from coconodz import Nodzgraph, application
 from coconodz.lib import (DictDotLookup,
                           read_json
                           )
@@ -97,8 +97,10 @@ class NodegraphCase(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls._test_attrs_data = read_json(os.path.join(os.path.dirname(coconodz.__file__),
-                                                      "tests", "nodegraph", "ref", "attrs.json"))
+        _test_data_dir = os.path.join(os.path.dirname(coconodz.__file__), "tests", "nodegraph", "ref")
+        cls._test_attrs_data = read_json(os.path.join(_test_data_dir, "attrs.json"))
+        cls._test_cons_data = read_json(os.path.join(_test_data_dir, "cons.json"))
+
     def setUp(self):
         Nodzgraph.clear()
 
@@ -157,21 +159,7 @@ class NodegraphCase(TestCase):
             self.assertEqual(node.sockets[name].dataType, data_type)
 
     def test_create_attributes(self):
-        node_types = ["lambert", "blinn", "surfaceShader", "shadingEngine", "file"]
-        # define possible (and for attr creation expected nodetypes)
-        Nodzgraph.creation_field.available_items = node_types
-        # hardcoded attributes testing
-        # have to exist within the _test_attrs_data
-        nodes_to_create = {"lambert1": node_types[0],
-                           "lambert2": node_types[0],
-                           "blinn1": node_types[1],
-                           "surfaceShader1": node_types[2],
-                           "surfaceShader1SG": node_types[3],
-                           "file1": node_types[4]
-                           }
-        for key, value in nodes_to_create.iteritems():
-            Nodzgraph.graph.create_node(key, node_type=value)
-
+        node_setup = _create_nodes_setup()
         # create the attributes
         Nodzgraph._create_attributes(self._test_attrs_data)
 
@@ -180,7 +168,7 @@ class NodegraphCase(TestCase):
         for attr, attr_data in self._test_attrs_data.iteritems():
             node_name = attr.split(".")[0]
             attr_name = attr.split(".")[1]
-            if node_name in nodes_to_create:
+            if node_name in node_setup:
                 self.assertIn(node_name, Nodzgraph.nodes_dict)
                 node = Nodzgraph.get_node_by_name(node_name)
                 if attr_data["type"] == ("plug" or "slot"):
@@ -190,6 +178,37 @@ class NodegraphCase(TestCase):
                     self.assertIn(attr_name, node.sockets)
                     self.assertEqual(node.sockets[attr_name].dataType, attr_data["data_type"])
 
+    def test_create_connections(self):
+        node_setup = _create_nodes_setup()
+        Nodzgraph._create_attributes(self._test_attrs_data)
+        Nodzgraph._create_connections(self._test_cons_data)
+
+        expected_connections = [(x, y) for x, y in self._test_cons_data.iteritems()
+                                if (x.split(".")[0] in node_setup and y.split(".")[0] in node_setup)]
+
+        self.assertListEqual(sorted(expected_connections), sorted(Nodzgraph.graph.evaluateGraph()))
 
 def _create_test_node(name="some", node_type="some"):
     return Nodzgraph.graph.create_node(name=name, node_type=node_type)
+
+
+def _create_nodes_setup():
+    node_types = ["lambert", "blinn", "surfaceShader", "shadingEngine", "file", "place2dTexture"]
+    # define possible (and for attr creation expected nodetypes)
+    Nodzgraph.creation_field.available_items = node_types
+    # hardcoded attributes testing
+    # have to exist within the _test_attrs_data
+    nodes_to_create = {"lambert1": node_types[0],
+                       "lambert2": node_types[0],
+                       "blinn1": node_types[1],
+                       "surfaceShader1": node_types[2],
+                       "surfaceShader1SG": node_types[3],
+                       "file1": node_types[4],
+                       "lambert2SG": node_types[3],
+                       "blinn1SG": node_types[3],
+                       "place2dTexture1": node_types[4]
+                       }
+    for key, value in nodes_to_create.iteritems():
+        Nodzgraph.graph.create_node(key, node_type=value)
+
+    return nodes_to_create
