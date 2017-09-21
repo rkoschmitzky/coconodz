@@ -132,6 +132,20 @@ class Nodzgraph(nodegraph.Nodegraph):
 
         self.graph.creation_field.available_items = available_node_types
 
+    def display_selected_host_nodes(self):
+        """ adds selected host nodes and corresponding connections to the graph
+
+        Returns:
+
+        """
+        nodes_dict = {node.name(): node.nodeType() for node in pmc.selected() if node.nodeType() in self.creation_field.available_items}
+        nodes_attributes = applib.get_connected_attributes_in_node_tree(pmc.selected(),
+                                                                        node_types=self.creation_field.available_items)
+        node_connections = applib.get_connections(pmc.selected())
+        self.display_host_nodes(nodes_dict=nodes_dict,
+                                attributes_dict=nodes_attributes,
+                                connections_dict=node_connections)
+
     def on_creation_input_accepted(self, node_type):
         pmc.createNode(node_type)
 

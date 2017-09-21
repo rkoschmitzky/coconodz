@@ -590,15 +590,22 @@ class Nodegraph(Basegraph):
     def save_graph(self, filepath):
         self.graph.saveGraph(filepath)
 
-    @SuppressEvents(["node_created", "socket_created", "plug_created", "connection_made", "plug_connected", "socket_connected"])
-    def display_host_node(self, node_name, node_type, attributes_dict={}, connections_dict={}):
+    @SuppressEvents(["after_node_created", "socket_created", "plug_created", "connection_made", "plug_connected", "socket_connected"])
+    def display_host_nodes(self, nodes_dict, attributes_dict={}, connections_dict={}):
         # @todo estimate creation position
-        self.graph.create_node(name=node_name, node_type=node_type)
+        print nodes_dict
+        for node_name, node_type in nodes_dict.iteritems():
+            self.graph.create_node(name=node_name, node_type=node_type)
+
         self._create_attributes(attributes_dict)
+        self._create_connections(connections_dict)
 
     @SuppressEvents("node_deleted")
     def undisplay_node(self, node_name):
         self.graph.delete_node(node_name)
+
+    def _filter_attributes_dict(self):
+        pass
 
     def _delete_node(self, name):
         node = self.get_node_by_name(name)
@@ -674,7 +681,7 @@ class Nodegraph(Basegraph):
                 elif plug_or_socket == "slot":
                     node.add_attribute(attribute_name, plug=True, socket=True, data_type=data_type)
             else:
-                LOG.info("Node '{0}' doesn't exist in graph yet.".format(node))
+                LOG.info("Node '{0}' doesn't exist in graph yet.".format(name.split(".")[0]))
 
         for key, value in attributes_dict.iteritems():
             msg = "Unexpected formatting. Expected dictionary holding a 'type' and 'data_type' key"
@@ -683,8 +690,15 @@ class Nodegraph(Basegraph):
 
             _create_node_attr(key, value["type"], value["data_type"])
 
-
     def _create_connections(self, connections_dict):
+        """ creates connections for available attributes in nodegraph
+
+        Args:
+            connections_dict: dictionary that holds the source attribute as key and destination attribute as value
+
+        Returns:
+
+        """
         for plug, socket in connections_dict.iteritems():
             self.__assert_attribute(plug)
             self.__assert_attribute(socket)

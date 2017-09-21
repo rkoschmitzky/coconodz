@@ -62,15 +62,32 @@ def get_connected_attributes_in_node_tree(node_or_nodes, node_types=None):
     """
     # find all nodes connected in tree and remove doubled
     tree_nodes = list(set(pmc.listHistory(node_or_nodes, f=True, ac=True) + pmc.listHistory(node_or_nodes, ac=True)))
+    all_connected_attributes = []
+
+    # checks if the attribute is a relevant attribute by checking
+    # the node types of the nodes connected to it
+    def _check_node_type(attribute):
+        if node_types:
+            is_relevant = False
+            if attribute.nodeType() in node_types:
+                dependencies = attribute.connections(p=True)
+                if dependencies:
+                    for dependency in dependencies:
+                        if not is_relevant and dependency.nodeType() in node_types:
+                            is_relevant = True
+            if is_relevant:
+                all_connected_attributes.append(attribute)
+        else:
+            all_connected_attributes.append(attribute)
 
     # based on all nodes in tree get all related attributes
-    all_connected_attributes = []
+    # do the filtering and check if the attribute is relevant
     for connection in pmc.listConnections(tree_nodes, c=True, p=True):
         source, destination = connection
         if source not in all_connected_attributes:
-            all_connected_attributes.append(source)
+            _check_node_type(source)
         if destination not in all_connected_attributes:
-            all_connected_attributes.append(destination)
+            _check_node_type(destination)
 
     # subdict skeleton every keys value in attribute should have
     subdict = {"node_type": None,
@@ -83,10 +100,7 @@ def get_connected_attributes_in_node_tree(node_or_nodes, node_types=None):
         _["node_type"] = attribute.nodeType()
         _["data_type"] = attribute.type()
         _["type"] = get_used_attribute_type(attribute)
-        if node_types and attribute.nodeType() in node_types:
-            attribute_dict[attribute.name()] = _
-        elif not node_types:
-            attribute_dict[attribute.name()] = _
+        attribute_dict[attribute.name()] = _
 
     return attribute_dict
 

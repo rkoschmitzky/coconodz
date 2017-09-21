@@ -160,9 +160,9 @@ class NodegraphCase(TestCase):
 
     def test_create_attributes(self):
         node_setup = _create_nodes_setup()
+        x = Nodzgraph.all_node_names
         # create the attributes
         Nodzgraph._create_attributes(self._test_attrs_data)
-
         # compare created attributes with the expected from _test_attrs_data
         # only considering nodes in node_to_create
         for attr, attr_data in self._test_attrs_data.iteritems():
@@ -188,27 +188,47 @@ class NodegraphCase(TestCase):
 
         self.assertListEqual(sorted(expected_connections), sorted(Nodzgraph.graph.evaluateGraph()))
 
+    #@unittest.SkipTest
+    def test_display_host_nodes(self):
+        """ visual testing
+
+        Returns:
+
+        """
+        Nodzgraph.display_host_nodes(_nodes_setup(),
+                                     self._test_attrs_data,
+                                     self._test_cons_data)
+
+        Nodzgraph.open()
+        application.exec_()
+
+
 def _create_test_node(name="some", node_type="some"):
     return Nodzgraph.graph.create_node(name=name, node_type=node_type)
 
 
-def _create_nodes_setup():
+def _nodes_setup():
     node_types = ["lambert", "blinn", "surfaceShader", "shadingEngine", "file", "place2dTexture"]
-    # define possible (and for attr creation expected nodetypes)
-    Nodzgraph.creation_field.available_items = node_types
     # hardcoded attributes testing
     # have to exist within the _test_attrs_data
-    nodes_to_create = {"lambert1": node_types[0],
-                       "lambert2": node_types[0],
-                       "blinn1": node_types[1],
-                       "surfaceShader1": node_types[2],
-                       "surfaceShader1SG": node_types[3],
-                       "file1": node_types[4],
-                       "lambert2SG": node_types[3],
-                       "blinn1SG": node_types[3],
-                       "place2dTexture1": node_types[4]
-                       }
-    for key, value in nodes_to_create.iteritems():
+    return {"lambert1": node_types[0],
+            "lambert2": node_types[0],
+            "blinn1": node_types[1],
+            "surfaceShader1": node_types[2],
+            "surfaceShader1SG": node_types[3],
+            "file1": node_types[4],
+            "lambert2SG": node_types[3],
+            "blinn1SG": node_types[3],
+            "place2dTexture1": node_types[4]
+            }
+
+
+def _create_nodes_setup():
+    _setup = _nodes_setup()
+    # define possible (and for attr creation expected nodetypes)
+    Nodzgraph.creation_field.available_items = list(set(_nodes_setup().keys()))
+
+    for key, value in _setup.iteritems():
         Nodzgraph.graph.create_node(key, node_type=value)
 
-    return nodes_to_create
+    return _setup
