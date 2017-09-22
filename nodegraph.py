@@ -1,7 +1,9 @@
 import logging
 
 from coconodz import Qt
+
 import nodz_main
+import nodz_utils
 
 from coconodz.lib import (BaseWindow,
                           GraphContext,
@@ -378,6 +380,16 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
     def connect_attributes(self, plug, socket):
         connection = self.createConnection(plug, socket)
+
+        # set color based on data_type
+        if self.configuration.connection_inherit_datatype_color:
+            expected_config = "datatype_{0}".format(plug.dataType)
+            if hasattr(self.configuration, expected_config):
+                LOG.warning("expected config exists")
+                LOG.warning(self.configuration_data[expected_config]["plug"])
+                color = nodz_utils._convertDataToColor(self.configuration_data[expected_config]["plug"])
+                connection._pen = color
+
         return connection
 
     def createConnection(self, plug, socket):
@@ -593,7 +605,6 @@ class Nodegraph(Basegraph):
     @SuppressEvents(["after_node_created", "socket_created", "plug_created", "connection_made", "plug_connected", "socket_connected"])
     def display_host_nodes(self, nodes_dict, attributes_dict={}, connections_dict={}):
         # @todo estimate creation position
-        print nodes_dict
         for node_name, node_type in nodes_dict.iteritems():
             self.graph.create_node(name=node_name, node_type=node_type)
 
