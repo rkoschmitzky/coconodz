@@ -84,14 +84,6 @@ class Nodzgraph(nodegraph.Nodegraph):
                                    callable=callbacks.remove_callbacks_only,
                                    callable_args=(self.events.data["host_node_name_changed"]["id_list"], )
                                    )
-        self.events.add_event("host_node_created",
-                              adder=callbacks.add_node_created_callback,
-                              adder_args=(self.on_host_node_created, )
-                              )
-        self.events.attach_remover("host_node_created",
-                                   callable=callbacks.remove_callbacks_only,
-                                   callable_args=(self.events.data["host_node_created"]["id_list"], )
-                                   )
         self.events.add_event("host_node_deleted",
                               adder=callbacks.add_node_deleted_callback,
                               adder_args=(self.on_host_node_deleted, )
@@ -138,7 +130,8 @@ class Nodzgraph(nodegraph.Nodegraph):
         Returns:
 
         """
-        nodes_dict = {node.name(): node.nodeType() for node in pmc.selected() if node.nodeType() in self.creation_field.available_items}
+        nodes_dict = {node.name(): node.nodeType() for node in pmc.selected()
+                      if node.nodeType() in self.creation_field.available_items}
         nodes_attributes = applib.get_connected_attributes_in_node_tree(pmc.selected(),
                                                                         node_types=self.creation_field.available_items)
         node_connections = applib.get_connections(pmc.selected())
@@ -147,7 +140,8 @@ class Nodzgraph(nodegraph.Nodegraph):
                                 connections_dict=node_connections)
 
     def on_creation_input_accepted(self, node_type):
-        pmc.createNode(node_type)
+        node = pmc.createNode(node_type)
+        self.on_host_node_created(node.name(), node_type=node_type)
 
     def on_context_request(self, widget):
         _widget = super(Nodzgraph, self).on_context_request(widget)

@@ -188,7 +188,7 @@ class NodegraphCase(TestCase):
 
         self.assertListEqual(sorted(expected_connections), sorted(Nodzgraph.graph.evaluateGraph()))
 
-    #@unittest.SkipTest
+    @unittest.SkipTest
     def test_display_host_nodes(self):
         """ visual testing
 

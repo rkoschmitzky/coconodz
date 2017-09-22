@@ -12,7 +12,7 @@ ERROR_MSG = "Looks like you want to run CocoNodz in a unknown environment." + \
 
 LOG = logging.getLogger(name="CocoNodz")
 LOG.addHandler(logging.StreamHandler(sys.__stdout__))
-LOG.setLevel(logging.DEBUG)
+LOG.setLevel(logging.WARNING)
 
 from coconodz.version import version
 
@@ -104,3 +104,6 @@ if exec_filename:
     elif host == "no_host":
         from coconodz import nodegraph
         Nodzgraph = nodegraph.Nodegraph()
+
+    if hasattr(Nodzgraph.configuration, "output_verbosity"):
+        LOG.setLevel(Nodzgraph.configuration.output_verbosity.upper())

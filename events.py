@@ -162,6 +162,16 @@ class Events(Singleton):
         except RuntimeError:
             LOG.error("Not able to pause event '{0}'".format(event_name))
 
+    def pause_all_events(self):
+        """ pauses all events that aren't paused
+
+        Returns:
+
+        """
+        for event_name, event_data in self.data.iteritems():
+            if not event_data["pause"]:
+                self.pause_event(event_name)
+
     def resume_event(self, event_name):
         """ resumes a previous paused event
 
