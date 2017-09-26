@@ -39,6 +39,7 @@ class ConfigurationCase(TestCase):
         self.assertIsInstance(Nodzgraph.configuration, DictDotLookup)
 
     def test_parent_presets(self):
+        self.assertHasAttribute(Nodzgraph.configuration, "output_verbosity")
         self.assertHasAttribute(Nodzgraph.configuration, "scene_width")
         self.assertHasAttribute(Nodzgraph.configuration, "scene_height")
         self.assertHasAttribute(Nodzgraph.configuration, "grid_size")
@@ -66,6 +67,7 @@ class ConfigurationCase(TestCase):
         self.assertHasAttribute(Nodzgraph.configuration, "grid_color")
         self.assertHasAttribute(Nodzgraph.configuration, "slot_border")
         self.assertHasAttribute(Nodzgraph.configuration, "non_connectable_color")
+        self.assertHasAttribute(Nodzgraph.configuration, "connection_inherit_datatype_color")
         self.assertHasAttribute(Nodzgraph.configuration, "connection_color")
         self.assertHasAttribute(Nodzgraph.configuration, "node_default")
         self.assertHasAttribute(Nodzgraph.configuration, "attr_default")
