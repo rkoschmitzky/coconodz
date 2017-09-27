@@ -8,8 +8,10 @@ from coconodz.etc.maya.ae.hooks import (DESIRED_HOOK,
                                         remove_template_custom_content
                                         )
 from coconodz.etc.maya.qtutilities import maya_main_window
-from coconodz.etc.maya import applib
-from coconodz.etc.maya import callbacks
+from coconodz.etc.maya import (applib,
+                               callbacks,
+                               decorators
+                               )
 from coconodz.events import SuppressEvents
 import coconodz.nodegraph as nodegraph
 from coconodz.lib import BaseWindow
@@ -108,6 +110,22 @@ class Nodzgraph(nodegraph.Nodegraph):
                                    callable=callbacks.remove_callbacks_only,
                                    callable_args=(self.events.data["host_disconnection_made"]["id_list"], )
                                    )
+        self.events.add_event("before_scene_changes",
+                              adder=callbacks.add_before_scene_callbacks,
+                              adder_args=(self.on_before_scene_changes, )
+                              )
+        self.events.attach_remover("before_scene_changes",
+                                   callable=callbacks.remove_callbacks_only,
+                                   callable_args=(self.events.data["before_scene_changes"]["id_list"], )
+                                   )
+        self.events.add_event("after_scene_changes",
+                              adder=callbacks.add_after_scene_callbacks,
+                              adder_args=(self.on_after_scene_changes, )
+                              )
+        self.events.attach_remover("after_scene_changes",
+                                   callable=callbacks.remove_callbacks_only,
+                                   callable_args=(self.events.data["after_scene_changes"]["id_list"], )
+                                   )
 
     def append_available_node_categories(self):
         """ appends available node types in categories
@@ -171,6 +189,13 @@ class Nodzgraph(nodegraph.Nodegraph):
         node = self.get_node_by_name(node_name)
         attribute_type = pmc.PyNode("{0}.{1}".format(node_name, attribute_name)).type()
         node.add_attribute(attribute_name, data_type=attribute_type)
+
+    def on_before_scene_changes(self, *args):
+        self.events.pause_events(exclude=["before_scene_changes", "after_scene_changes"])
+
+    @decorators.execute_deferred
+    def on_after_scene_changes(self, *args):
+        self.events.resume_paused_events()
 
     @SuppressEvents("host_node_created")
     def on_node_created(self, node):

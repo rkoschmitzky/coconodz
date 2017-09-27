@@ -6,6 +6,9 @@ import pymel.core as pmc
 from coconodz.etc.maya.ae.hooks import AEHook
 
 LOG = logging.getLogger(name="CocoNodz.nodegraph")
+RELEVANT_BEFORE_SCENE_CALLBACKS = ["before_open", "before_new", "before_import", "before_plugin"]
+RELEVANT_AFTER_SCENE_CALLBACKS = ["after_open", "after_new", "after_import", "after_plugin"]
+
 
 
 def remove_callback(callback_id):
@@ -78,5 +81,85 @@ def add_disconnection_made_callback(callable):
     return om.MDGMessage.addConnectionCallback(_get_plug_names)
 
 
-def add_template_custom_content(nodeName):
-    AEHook(nodeName)
+def add_before_scene_open_callback(callable):
+    return om.MSceneMessage.addCallback(om.MSceneMessage.kBeforeOpen, callable)
+
+
+def add_after_scene_open_callback(callable):
+    return om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, callable)
+
+
+def add_before_new_scene_callback(callable):
+    return om.MSceneMessage.addCallback(om.MSceneMessage.kBeforeNew, callable)
+
+
+def add_after_new_scene_callback(callable):
+    return om.MSceneMessage.addCallback(om.MSceneMessage.kAfterNew, callable)
+
+
+def add_before_import_callback(callable):
+    return om.MSceneMessage.addCallback(om.MSceneMessage.kBeforeImport, callable)
+
+
+def add_after_import_callback(callable):
+    return om.MSceneMessage.addCallback(om.MSceneMessage.kAfterImport, callable)
+
+
+def add_before_plugin_load_callback(callable):
+
+    def _get_plugins(strs, *args, **kwargs):
+        if not strs[1] == "coconodz_maya":
+            return callable()
+
+    return om.MSceneMessage.addStringArrayCallback(om.MSceneMessage.kAfterPluginLoad, _get_plugins)
+
+
+def add_after_plugin_load_callback(callable):
+
+    def _get_plugins(strs, *args, **kwargs):
+        if not strs[1] == "coconodz_maya":
+            return callable()
+
+    return om.MSceneMessage.addStringArrayCallback(om.MSceneMessage.kAfterPluginLoad, _get_plugins)
+
+
+def add_before_scene_callbacks(callable, relevants=RELEVANT_BEFORE_SCENE_CALLBACKS):
+
+    callback_ids = []
+
+    for relevant in relevants:
+        if relevant == "before_open":
+            callback_ids.append(add_before_scene_open_callback(callable))
+        elif relevant == "before_new":
+            callback_ids.append(add_before_new_scene_callback(callable))
+        elif relevant == "before_import":
+            callback_ids.append(add_before_import_callback(callable))
+        elif relevant == "before_plugin":
+            callback_ids.append(add_before_plugin_load_callback(callable))
+        else:
+            raise NotImplementedError
+
+    return callback_ids
+
+
+def add_after_scene_callbacks(callable, relevants=RELEVANT_AFTER_SCENE_CALLBACKS):
+
+    callback_ids = []
+
+    for relevant in relevants:
+        if relevant == "after_open":
+            callback_ids.append(add_after_scene_open_callback(callable))
+        elif relevant == "after_new":
+            callback_ids.append(add_after_new_scene_callback(callable))
+        elif relevant == "after_import":
+            callback_ids.append(add_after_import_callback(callable))
+        elif relevant == "after_plugin":
+            callback_ids.append(add_after_plugin_load_callback(callable))
+        else:
+            raise NotImplementedError
+
+    return callback_ids
+
+
+def add_template_custom_content(node_name):
+    AEHook(node_name)

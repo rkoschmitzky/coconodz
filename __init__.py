@@ -82,7 +82,6 @@ if exec_filename:
             LOG.info("Initializing Nodegraph Configuration for Katana")
             host = "katana"
     else:
-
         if os.environ.get("COCONODZ_IGNORE_HOST", 0):
             host = "no_host"
         else:
@@ -104,6 +103,3 @@ if exec_filename:
     elif host == "no_host":
         from coconodz import nodegraph
         Nodzgraph = nodegraph.Nodegraph()
-
-    if hasattr(Nodzgraph.configuration, "output_verbosity"):
-        LOG.setLevel(Nodzgraph.configuration.output_verbosity.upper())

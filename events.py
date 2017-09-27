@@ -88,7 +88,12 @@ class Events(Singleton):
                               "description": description
                               }
 
-                event_data["id_list"] = [adder(*adder_args, **adder_kwargs)]
+                ids = adder(*adder_args, **adder_kwargs)
+
+                if not isinstance(ids, list):
+                    event_data["id_list"] = [ids]
+                else:
+                    event_data["id_list"] = ids
                 self.data[event_name] = event_data
                 LOG.info('Added event named %s' % event_name)
 
@@ -162,14 +167,14 @@ class Events(Singleton):
         except RuntimeError:
             LOG.error("Not able to pause event '{0}'".format(event_name))
 
-    def pause_all_events(self):
+    def pause_events(self, exclude=[]):
         """ pauses all events that aren't paused
 
         Returns:
 
         """
         for event_name, event_data in self.data.iteritems():
-            if not event_data["pause"]:
+            if not event_data["paused"] and not event_name in exclude:
                 self.pause_event(event_name)
 
     def resume_event(self, event_name):
@@ -202,7 +207,7 @@ class Events(Singleton):
 
         """
         for event_name, event_data in self.data.iteritems():
-            if event_data["pause"]:
+            if event_data["paused"]:
                 self.resume_event(event_name)
 
     def _get_event_data(self, event_name):

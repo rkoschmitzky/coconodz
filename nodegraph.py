@@ -14,7 +14,7 @@ from coconodz.events import (Events,
                              SuppressEvents
                              )
 
-
+_COCONODZ_LOG = logging.getLogger(name="CocoNodz")
 LOG = logging.getLogger(name="CocoNodz.nodegraph")
 
 
@@ -455,6 +455,10 @@ class Nodegraph(Basegraph):
 
         # create the graphingscene
         self._graph = Nodz(self._window)
+
+        # apply logging verbosity
+        _COCONODZ_LOG.setLevel(self.configuration.output_verbosity.upper())
+
         self.graph.initialize()
 
         # to query nodes our own way
