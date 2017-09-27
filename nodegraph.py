@@ -147,7 +147,7 @@ class NodeItem(nodz_main.NodeItem):
             event.modifiers() == Qt.QtCore.Qt.ControlModifier):
             self.signal_context_request.emit(self)
         else:
-            super(NodeItem, self).mouseMoveEvent(event)
+            super(NodeItem, self).mousePressEvent(event)
 
     def add_attribute(self, name, add_mode=None, plug=True, socket=True, data_type=""):
         """ wrapper around the _createAttribute method that allows better customization of attribute generation
@@ -385,8 +385,6 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         if self.configuration.connection_inherit_datatype_color:
             expected_config = "datatype_{0}".format(plug.dataType)
             if hasattr(self.configuration, expected_config):
-                LOG.warning("expected config exists")
-                LOG.warning(self.configuration_data[expected_config]["plug"])
                 color = nodz_utils._convertDataToColor(self.configuration_data[expected_config]["plug"])
                 connection._pen = color
 

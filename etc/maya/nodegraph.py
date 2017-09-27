@@ -197,7 +197,6 @@ class Nodzgraph(nodegraph.Nodegraph):
     def on_after_scene_changes(self, *args):
         self.events.resume_paused_events()
 
-    @SuppressEvents("host_node_created")
     def on_node_created(self, node):
         """ slot extension
 
