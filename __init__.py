@@ -81,18 +81,19 @@ if exec_filename:
         if _import_expected("Katana"):
             LOG.info("Initializing Nodegraph Configuration for Katana")
             host = "katana"
-    else:
-        if os.environ.get("COCONODZ_IGNORE_HOST", 0):
-            host = "no_host"
-        else:
-            hosts = _get_hosts()
-            if len(hosts) != 1:
-                raise NotImplementedError("Not able to detect proper host. {0}".format(ERROR_MSG))
 
-            elif len(hosts) == 1:
-                    host = hosts[0]
-            else:
-                host = "no_host"
+    # set to no host when required
+    if os.environ.get("COCONODZ_IGNORE_HOST", 0):
+        host = "no_host"
+    else:
+        hosts = _get_hosts()
+        if len(hosts) != 1:
+            raise NotImplementedError("Not able to detect proper host. {0}".format(ERROR_MSG))
+
+        elif len(hosts) == 1:
+                host = hosts[0]
+        else:
+            host = "no_host"
 
     if host == "maya":
         from coconodz.etc.maya.nodegraph import Nodzgraph as _Nodzgraph
