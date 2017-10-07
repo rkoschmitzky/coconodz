@@ -228,6 +228,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     signal_context_request = Qt.QtCore.Signal(object)
     signal_creation_field_request = Qt.QtCore.Signal()
     signal_search_field_request = Qt.QtCore.Signal()
+    signal_layout_request = Qt.QtCore.Signal()
 
     def __init__(self, parent):
         super(Nodz, self).__init__(parent)
@@ -304,6 +305,8 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         if (event.key() == Qt.QtCore.Qt.Key_F and
             event.modifiers() == Qt.QtCore.Qt.ControlModifier):
             self.signal_search_field_request.emit()
+        if event.key() == Qt.QtCore.Qt.Key_L:
+            self.signal_layout_request.emit()
 
         # Emit signal.
         self.signal_KeyPressed.emit(event.key())
@@ -441,18 +444,18 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         pass
 
 
-    def layout_nodes(self, nodes=None):
+    def layout_nodes(self, node_names=None):
 
         node_width = 300  # default value, will be replaced by node.baseWidth + margin when iterating on the first node
         margin = self.configuration.layout_margin_size
         scene_nodes = self.scene().nodes.keys()
-        if not nodes:
-            nodes = scene_nodes
+        if not node_names:
+            node_names = scene_nodes
         root_nodes = []
         already_placed_nodes = []
 
         # root nodes (without connection on the plug)
-        for node_name in nodes:
+        for node_name in node_names:
             node = self.scene().nodes[node_name]
             if node is not None:
                 node_width = node.baseWidth + margin
@@ -507,7 +510,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
                         if len(node.plugs.values()[0].connections) > 0:
                             parent_pos = node.plugs.values()[0].connections[0].socketItem.parentItem().pos()
                             current_xpos = parent_pos.x() - node_width
-                    if (node not in already_placed_nodes) and (node.name in nodes):
+                    if (node not in already_placed_nodes) and (node.name in node_names):
                         already_placed_nodes.append(node)
                         node_pos = Qt.QtCore.QPointF(current_xpos, current_ypos)
                         node.setPos(node_pos)
@@ -873,6 +876,16 @@ class Nodegraph(Basegraph):
                                             self.on_context_request
                                             )
                               )
+        self.events.add_event("layout_request",
+                              adder=self._connect_slot,
+                              adder_args=(self.graph.signal_layout_request,
+                                          self.on_layout_request
+                                          ),
+                              remover=self._disconnect_slot,
+                              remover_args=(self.graph.signal_layout_request,
+                                            self.on_layout_request
+                                            )
+                              )
         self.events.add_event("attribute_field_input_accepted",
                               adder=self._connect_slot,
                               adder_args=(self.attribute_context.signal_input_accepted,
@@ -977,13 +990,16 @@ class Nodegraph(Basegraph):
 
         """
         if self.selected_nodes:
-            self.graph.layout_nodes(self.selected_nodes)
+            self.graph.layout_nodes(self.selected_node_names)
 
     def on_creation_field_request(self):
         self.creation_field.open()
 
     def on_search_field_request(self):
         self.search_field.open()
+
+    def on_layout_request(self):
+        self.layout_selected_nodes()
 
     def on_context_request(self, widget):
         """ opens the field or context widgets based on widget type
