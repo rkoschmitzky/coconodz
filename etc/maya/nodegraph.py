@@ -221,21 +221,20 @@ class Nodzgraph(nodegraph.Nodegraph):
         super(Nodzgraph, self).on_host_node_created(node_name, node_type)
 
     @SuppressEvents("host_connection_made")
-    def on_connection_made(self, node_name1, slot_name1, node_name2, slot_name2):
+    def on_connection_made(self, connection):
         """ slot extension
 
         Args:
-            node_name1:
-            slot_name1:
-            node_name2:
-            slot_name2:
+            connection:
 
         Returns:
 
         """
-        slot1 = pmc.PyNode("{0}.{1}".format(node_name1, slot_name1))
-        slot2 = pmc.PyNode("{0}.{1}".format(node_name2, slot_name2))
+        slot1 = pmc.PyNode("{0}.{1}".format(connection.plugNode, connection.plugAttr))
+        slot2 = pmc.PyNode("{0}.{1}".format(connection.socketNode, connection.socketAttr))
         slot1 >> slot2
+        
+        super(Nodzgraph, self).on_connection_made(connection)
 
     @SuppressEvents(["connection_made", "plug_connected", "socket_connected"])
     def on_host_connection_made(self, plug_name, socket_name):

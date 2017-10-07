@@ -212,8 +212,38 @@ class NodeItem(nodz_main.NodeItem):
             raise NotImplementedError
 
 
+# class ConnectionItem(nodz_main.ConnectionItem):
+#
+#     def __init__(self, source_point, target_point, source, target):
+#         super(NodeItem, self).__init__(source_point, target_point, source, target)
+#
+#         self._plug = None
+#         self._socket = None
+#         self._source_node = None
+#         self._destionation_node = None
+#
+#     @property
+#     def plug(self):
+#         return self._plug
+#
+#     @plug.setter
+#     def plug(self, plug_item):
+#         assert isinstance(plug_item, nodz_main.PlugItem)
+#
+#         self._plug = plug_item
+#
+#     @property
+#     def socket(self):
+#         return self._socket
+#
+#     @socket.setter
+#     def socket(self, socket_item):
+#         assert isinstance(socket_item, nodz_main.SocketItem)
+#
+#         self._socket = socket_item
+
 class Nodz(ConfiguationMixin, nodz_main.Nodz):
-    """ This class will let us override or extend behaviour
+    """ This class will let us override or extend behavior
     for the purpose of better customization
 
     """
@@ -223,7 +253,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     signal_after_node_created = Qt.QtCore.Signal(object)
     signal_node_plug_created = Qt.QtCore.Signal(object)
     signal_node_socket_created = Qt.QtCore.Signal(object)
-    signal_connection_made = Qt.QtCore.Signal(str, str, str, str)
+    signal_connection_made = Qt.QtCore.Signal(object)
     signal_about_attribute_create = Qt.QtCore.Signal(str, str)
     signal_context_request = Qt.QtCore.Signal(object)
     signal_creation_field_request = Qt.QtCore.Signal()
@@ -381,17 +411,16 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     def delete_node(self, name):
         raise NotImplementedError
 
-    def apply_data_type_color_to_connection(self, connection, plug=None):
+    def apply_data_type_color_to_connection(self, connection):
         # set color based on data_type
         if self.configuration.connection_inherit_datatype_color:
-            expected_config = "datatype_{0}".format(plug.dataType)
+            expected_config = "datatype_{0}".format(connection.plugItem.dataType)
             if hasattr(self.configuration, expected_config):
                 color = nodz_utils._convertDataToColor(self.configuration_data[expected_config]["plug"])
                 connection._pen = color
 
     def connect_attributes(self, plug, socket):
         connection = self.createConnection(plug, socket)
-        #self.apply_data_type_color_to_connection(plug)
 
         return connection
 
@@ -400,11 +429,16 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         connection.plugNode = plug.parentItem().name
         connection.plugAttr = plug.attribute
+        connection.plugItem = plug
         connection.socketNode = socket.parentItem().name
         connection.socketAttr = socket.attribute
+        connection.socketItem = socket
 
         plug.connect(socket, connection)
         socket.connect(plug, connection)
+
+        # let us apply the corresponding datatype color
+        self.apply_data_type_color_to_connection(connection)
 
         connection.updatePath()
 
@@ -442,7 +476,6 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
     def on_socket_created(self, socket_item):
         pass
-
 
     def layout_nodes(self, node_names=None):
 
@@ -804,6 +837,11 @@ class Nodegraph(Basegraph):
             if source_node and destination_node:
                 self.__handle_connection(plug, socket, True)
 
+    def _get_shared_connection(self, source_node_name, plug_name, destination_node_name, socket_name):
+        plug = self.get_plug_by_name("{0}.{1}".format(source_node_name, plug_name))
+        socket = self.get_socket_by_name("{0}.{1}".format(destination_node_name, socket_name))
+        return self.graph.get_shared_connection(plug, socket)
+
     def register_events(self):
         """ setup events by connecting all signals and slots
 
@@ -1085,16 +1123,20 @@ class Nodegraph(Basegraph):
     def on_socket_created(self, socket_item):
         pass
 
-    def on_connection_made(self, node_name1, slot_name1, node_name2, slot_name2):
-        pass
+    def on_connection_made(self, connection):
+        self.graph.apply_data_type_color_to_connection(connection)
 
-    def on_plug_connected(self, source_node_name, source_plug_name, destination_node_name, destination_socket_name):
-        if destination_node_name and destination_socket_name:
-            self.graph.signal_connection_made.emit(source_node_name, source_plug_name, destination_node_name, destination_socket_name)
+    def on_plug_connected(self, source_node_name, plug_name, destination_node_name, socket_name):
+        if destination_node_name and socket_name:
+            connection = self._get_shared_connection(source_node_name, plug_name, destination_node_name,
+                                                           socket_name)
+            self.graph.signal_connection_made.emit(connection)
 
-    def on_socket_connected(self, source_node_name, source_plug_name, destination_node_name, destination_socket_name):
-        if source_node_name and source_plug_name:
-            self.graph.signal_connection_made.emit(source_node_name, source_plug_name, destination_node_name, destination_socket_name)
+    def on_socket_connected(self, source_node_name, plug_name, destination_node_name, socket_name):
+        if source_node_name and plug_name:
+            connection = self._get_shared_connection(source_node_name, plug_name, destination_node_name,
+                                                           socket_name)
+            self.graph.signal_connection_made.emit(connection)
 
     def on_host_node_created(self, node_name, node_type):
         if not node_type in self.creation_field.available_items:
