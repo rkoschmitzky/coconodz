@@ -72,6 +72,8 @@ class ConfigurationCase(TestCase):
         self.assertHasAttribute(Nodzgraph.configuration, "node_default")
         self.assertHasAttribute(Nodzgraph.configuration, "attr_default")
         self.assertHasAttribute(Nodzgraph.configuration, "datatype_default")
+        self.assertHasAttribute(Nodzgraph.configuration, "layout_margin_size")
+
 
     def test_load_configuration(self):
         old_width = Nodzgraph.configuration.scene_width
@@ -190,7 +192,7 @@ class NodegraphCase(TestCase):
 
         self.assertListEqual(sorted(expected_connections), sorted(Nodzgraph.graph.evaluateGraph()))
 
-    #@unittest.SkipTest
+    @unittest.SkipTest
     def test_display_host_nodes(self):
         """ visual testing
 

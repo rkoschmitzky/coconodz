@@ -378,15 +378,17 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     def delete_node(self, name):
         raise NotImplementedError
 
-    def connect_attributes(self, plug, socket):
-        connection = self.createConnection(plug, socket)
-
+    def apply_data_type_color_to_connection(self, connection, plug=None):
         # set color based on data_type
         if self.configuration.connection_inherit_datatype_color:
             expected_config = "datatype_{0}".format(plug.dataType)
             if hasattr(self.configuration, expected_config):
                 color = nodz_utils._convertDataToColor(self.configuration_data[expected_config]["plug"])
                 connection._pen = color
+
+    def connect_attributes(self, plug, socket):
+        connection = self.createConnection(plug, socket)
+        #self.apply_data_type_color_to_connection(plug)
 
         return connection
 
@@ -437,6 +439,85 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
     def on_socket_created(self, socket_item):
         pass
+
+
+    def layout_nodes(self, nodes=None):
+
+        node_width = 300  # default value, will be replaced by node.baseWidth + margin when iterating on the first node
+        margin = self.configuration.layout_margin_size
+        scene_nodes = self.scene().nodes.keys()
+        if not nodes:
+            nodes = scene_nodes
+        root_nodes = []
+        already_placed_nodes = []
+
+        # root nodes (without connection on the plug)
+        for node_name in nodes:
+            node = self.scene().nodes[node_name]
+            if node is not None:
+                node_width = node.baseWidth + margin
+                is_root = True
+                for plug in node.plugs.values():
+                    is_root &= (len(plug.connections) == 0)
+                if is_root:
+                    root_nodes.append(node)
+
+        max_graph_width = 0
+        root_graphs = []
+        for root_node in root_nodes:
+            root_graph = list()
+            root_graph.append([root_node])
+
+            current_graph_level = 0
+            do_next_graph_level = True
+            while do_next_graph_level:
+                do_next_graph_level = False
+                for _node in range(len(root_graph[current_graph_level])):
+                    node = root_graph[current_graph_level][_node]
+                    for attr in node.attrs:
+                        if attr in node.sockets:
+                            socket = node.sockets[attr]
+                            for connection in socket.connections:
+                                if len(root_graph) <= current_graph_level + 1:
+                                    root_graph.append(list())
+                                root_graph[current_graph_level + 1].append(connection.plugItem.parentItem())
+                                do_next_graph_level = True
+                current_graph_level += 1
+
+            graph_width = len(root_graph) * (node_width + margin)
+            max_graph_width = max(graph_width, max_graph_width)
+            root_graphs.append(root_graph)
+
+        # update scne rect if needed
+        if max_graph_width > self.scene().width():
+            scene_rect = self.scene().sceneRect()
+            scene_rect.setWidth(max_graph_width)
+            self.scene().setSceneRect(scene_rect)
+
+        base_ypos = margin
+        for root_graph in root_graphs:
+            # set positions...
+            # middle of the view
+            current_xpos = max(0, 0.5 * (self.scene().width() - max_graph_width)) + max_graph_width - node_width
+            next_base_ypos = base_ypos
+            for nodes_at_level in root_graph:
+                current_ypos = base_ypos
+                for node in nodes_at_level:
+                    if len(node.plugs) > 0:
+                        if len(node.plugs.values()[0].connections) > 0:
+                            parent_pos = node.plugs.values()[0].connections[0].socketItem.parentItem().pos()
+                            current_xpos = parent_pos.x() - node_width
+                    if (node not in already_placed_nodes) and (node.name in nodes):
+                        already_placed_nodes.append(node)
+                        node_pos = Qt.QtCore.QPointF(current_xpos, current_ypos)
+                        node.setPos(node_pos)
+
+                    current_ypos += node.height + margin
+                    next_base_ypos = max(next_base_ypos, current_ypos)
+                current_xpos -= node_width
+            base_ypos = next_base_ypos
+
+        self.scene().updateScene()
 
 
 class Nodegraph(Basegraph):
@@ -889,6 +970,15 @@ class Nodegraph(Basegraph):
                                             )
                               )
 
+    def layout_selected_nodes(self):
+        """ rearranges node the node positions of selected nodes
+
+        Returns:
+
+        """
+        if self.selected_nodes:
+            self.graph.layout_nodes(self.selected_nodes)
+
     def on_creation_field_request(self):
         self.creation_field.open()
 
@@ -1038,7 +1128,6 @@ class Nodegraph(Basegraph):
             LOG.warning(_msg.format("plug", plug_name))
         if not socket:
             LOG.warning(_msg.format("socket", socket_name))
-
 
     def on_host_connection_made(self, plug_name, socket_name):
         self.__handle_connection(plug_name, socket_name, 1)
