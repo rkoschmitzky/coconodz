@@ -2,6 +2,7 @@ import logging
 
 import pymel.core as pmc
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
+import maya.utils
 
 from coconodz.etc.maya.ae.hooks import (DESIRED_HOOK,
                                         OWNER,
@@ -225,24 +226,32 @@ class Nodzgraph(nodegraph.Nodegraph):
         """ slot extension
 
         Args:
-            connection:
+            connection: ConnectionItem instance
 
         Returns:
 
         """
-        slot1 = pmc.PyNode("{0}.{1}".format(connection.plugNode, connection.plugAttr))
-        slot2 = pmc.PyNode("{0}.{1}".format(connection.socketNode, connection.socketAttr))
-        slot1 >> slot2
-        
-        super(Nodzgraph, self).on_connection_made(connection)
+
+        plug_name = "{0}.{1}".format(connection.plugNode, connection.plugAttr)
+        socket_name = "{0}.{1}".format(connection.socketNode, connection.socketAttr)
+
+        try:
+            slot1 = pmc.PyNode(plug_name)
+            slot2 = pmc.PyNode(socket_name)
+            slot1 >> slot2
+
+            super(Nodzgraph, self).on_connection_made(connection)
+        except:
+            LOG.warning("Can not connect {0} to {1}".format(plug_name, socket_name))
+
 
     @SuppressEvents(["connection_made", "plug_connected", "socket_connected"])
     def on_host_connection_made(self, plug_name, socket_name):
         """ slot extension
 
         Args:
-            plug_name:
-            socket_name:
+            plug_name: name of the plug
+            socket_name: name of the socket
 
         Returns:
 

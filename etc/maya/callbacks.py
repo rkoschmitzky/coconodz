@@ -15,7 +15,7 @@ def remove_callback(callback_id):
     try:
         om.MDGMessage.removeCallback(callback_id)
     except RuntimeError:
-        LOG.error("Not able to remove callback id {0}.".format(callback_id) +
+        LOG.error("Not able to remove callback id {0}.".format(str(callback_id)) +
                   "Please check the events class for the corresponding event.", exc_info=True)
 
 

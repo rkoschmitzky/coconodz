@@ -128,6 +128,7 @@ class NodeItem(nodz_main.NodeItem):
         self._node_type = None
         self._plugs_dict = {}
         self._sockets_dict = {}
+        self._connections = []
 
         # unfortunately the original NodeItem implementation doesn't store the config
         # by default
@@ -141,6 +142,18 @@ class NodeItem(nodz_main.NodeItem):
     def node_type(self, value):
         assert isinstance(value, basestring)
         self._node_type = value
+
+    @property
+    def connections(self):
+        return self._connections
+
+    def append_connection(self, connection):
+        assert isinstance(connection, nodz_main.ConnectionItem)
+        self._connections.append(connection)
+
+    def remove_connection(self, connection):
+        if connection in self.connections:
+            self.connections.remove(connection)
 
     def mousePressEvent(self, event):
         if (event.button() == Qt.QtCore.Qt.RightButton and
@@ -211,36 +224,12 @@ class NodeItem(nodz_main.NodeItem):
         else:
             raise NotImplementedError
 
+        # update the connections paths
+        for connection in self.connections:
+            connection.target_point = connection.target.center()
+            connection.source_point = connection.source.center()
+            connection.updatePath()
 
-# class ConnectionItem(nodz_main.ConnectionItem):
-#
-#     def __init__(self, source_point, target_point, source, target):
-#         super(NodeItem, self).__init__(source_point, target_point, source, target)
-#
-#         self._plug = None
-#         self._socket = None
-#         self._source_node = None
-#         self._destionation_node = None
-#
-#     @property
-#     def plug(self):
-#         return self._plug
-#
-#     @plug.setter
-#     def plug(self, plug_item):
-#         assert isinstance(plug_item, nodz_main.PlugItem)
-#
-#         self._plug = plug_item
-#
-#     @property
-#     def socket(self):
-#         return self._socket
-#
-#     @socket.setter
-#     def socket(self, socket_item):
-#         assert isinstance(socket_item, nodz_main.SocketItem)
-#
-#         self._socket = socket_item
 
 class Nodz(ConfiguationMixin, nodz_main.Nodz):
     """ This class will let us override or extend behavior
@@ -254,6 +243,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     signal_node_plug_created = Qt.QtCore.Signal(object)
     signal_node_socket_created = Qt.QtCore.Signal(object)
     signal_connection_made = Qt.QtCore.Signal(object)
+    signal_disconnection_made = Qt.QtCore.Signal(object)
     signal_about_attribute_create = Qt.QtCore.Signal(str, str)
     signal_context_request = Qt.QtCore.Signal(object)
     signal_creation_field_request = Qt.QtCore.Signal()
@@ -412,9 +402,20 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         raise NotImplementedError
 
     def apply_data_type_color_to_connection(self, connection):
+        """ takes and applies the color from the datatype to connection
+
+        Args:
+            connection: ConnectionItemInstance
+
+        Returns:
+
+        """
         # set color based on data_type
         if self.configuration.connection_inherit_datatype_color:
-            expected_config = "datatype_{0}".format(connection.plugItem.dataType)
+            if connection.plugItem:
+                expected_config = "datatype_{0}".format(connection.plugItem.dataType)
+            else:
+                expected_config = "datatype_{0}".format(connection.socketItem.dataType)
             if hasattr(self.configuration, expected_config):
                 color = nodz_utils._convertDataToColor(self.configuration_data[expected_config]["plug"])
                 connection._pen = color
@@ -425,6 +426,15 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         return connection
 
     def createConnection(self, plug, socket):
+        """ extends the default behavior
+
+        Args:
+            plug:
+            socket:
+
+        Returns:
+
+        """
         connection = nodz_main.ConnectionItem(plug.center(), socket.center(), plug, socket)
 
         connection.plugNode = plug.parentItem().name
@@ -440,13 +450,28 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         # let us apply the corresponding datatype color
         self.apply_data_type_color_to_connection(connection)
 
-        connection.updatePath()
-
         self.scene().addItem(connection)
+
+        # lets store the connections on the nodes directly
+        # this will be necessary if attributes where added to the node and we have to loop through
+        # existing connections on the to to update their paths
+        #self.get_node_by_name(connection.plugNode).append_connection(connection)
+        #self.get_node_by_name(connection.socketNode).append_connection(connection)
+
+        connection.updatePath()
 
         return connection
 
     def get_shared_connection(self, plug, socket):
+        """ finds the shared connection item
+
+        Args:
+            plug: PlugItem instance
+            socket: SocketItem instance
+
+        Returns: ConnectionItem instance
+
+        """
         all_connections = plug.connections + socket.connections
         shared_connections = list(set(all_connections))
         if shared_connections:
@@ -456,12 +481,21 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
                 return shared_connections[0]
 
     def disconnect_attributes(self, plug, socket):
+        """ removes a shared connection
+
+        Args:
+            plug: PlugItem instance
+            socket: SocketItem instance
+
+        Returns:
+
+        """
         connection = self.get_shared_connection(plug, socket)
         if connection:
             connection._remove()
 
     def on_context_request(self, node_item):
-        """ placeholder method, has to be overriden in Nodegraphclass
+        """ placeholder method, has to be overriden in Nodegraph class
 
         Args:
             node_item:
@@ -478,7 +512,17 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         pass
 
     def layout_nodes(self, node_names=None):
+        """ rearranges node positions
 
+        Notes:
+            Adopted from implementation of user https://github.com/glm-ypinczon
+
+        Args:
+            node_names: expects a list of node names otherwise it will consider all available nodes
+
+        Returns:
+
+        """
         node_width = 300  # default value, will be replaced by node.baseWidth + margin when iterating on the first node
         margin = self.configuration.layout_margin_size
         scene_nodes = self.scene().nodes.keys()
@@ -555,6 +599,17 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         self.scene().updateScene()
 
+    def get_node_by_name(self, node_name):
+        """ placeholder method, has to be overriden in Nodegraph class
+
+        Args:
+            node_name:
+
+        Returns:
+
+        """
+        pass
+
 
 class Nodegraph(Basegraph):
     """ main Nodegraph that should be accessable without any host application
@@ -585,10 +640,10 @@ class Nodegraph(Basegraph):
         # set slots
         self.register_events()
 
-        # just testing
         self.creation_field.available_items = self.configuration.available_node_types
 
         self.graph.delete_node = self._delete_node
+        self.graph.get_node_by_name = self.get_node_by_name
 
         self._initialized = True
 
@@ -1000,6 +1055,16 @@ class Nodegraph(Basegraph):
                                               self.on_connection_made
                                             )
                               )
+        self.events.add_event("disconnection_made",
+                              adder=self._connect_slot,
+                              adder_args=(self.graph.signal_disconnection_made,
+                                          self.on_disconnection_made
+                                          ),
+                              remover=self._disconnect_slot,
+                              remover_args=(self.graph.signal_disconnection_made,
+                                              self.on_disconnection_made
+                                            )
+                              )
         self.events.add_event("plug_connected",
                               adder=self._connect_slot,
                               adder_args=(self.graph.signal_PlugConnected,
@@ -1010,6 +1075,16 @@ class Nodegraph(Basegraph):
                                               self.on_plug_connected
                                             )
                               )
+        self.events.add_event("plug_disconnected",
+                              adder=self._connect_slot,
+                              adder_args=(self.graph.signal_PlugDisconnected,
+                                          self.on_plug_disconnected
+                                          ),
+                              remover=self._disconnect_slot,
+                              remover_args=(self.graph.signal_PlugDisconnected,
+                                              self.on_plug_disconnected
+                                            )
+                              )
         self.events.add_event("socket_connected",
                               adder=self._connect_slot,
                               adder_args=(self.graph.signal_SocketConnected,
@@ -1018,6 +1093,16 @@ class Nodegraph(Basegraph):
                               remover=self._disconnect_slot,
                               remover_args=(self.graph.signal_SocketConnected,
                                             self.on_socket_connected
+                                            )
+                              )
+        self.events.add_event("socket_disconnected",
+                              adder=self._connect_slot,
+                              adder_args=(self.graph.signal_SocketDisconnected,
+                                          self.on_socket_disconnected
+                                          ),
+                              remover=self._disconnect_slot,
+                              remover_args=(self.graph.signal_SocketDisconnected,
+                                              self.on_socket_disconnected
                                             )
                               )
 
@@ -1123,8 +1208,15 @@ class Nodegraph(Basegraph):
     def on_socket_created(self, socket_item):
         pass
 
-    def on_connection_made(self, connection):
-        self.graph.apply_data_type_color_to_connection(connection)
+    def on_connection_made(self, connection_item):
+        self.graph.apply_data_type_color_to_connection(connection_item)
+
+        self.get_node_by_name(connection_item.plugNode).append_connection(connection_item)
+        self.get_node_by_name(connection_item.socketNode).append_connection(connection_item)
+
+    def on_disconnection_made(self, connection_item):
+        self.get_node_by_name(connection_item.plugNode).remove_connection(connection_item)
+        self.get_node_by_name(connection_item.socketNode).remove_connection(connection_item)
 
     def on_plug_connected(self, source_node_name, plug_name, destination_node_name, socket_name):
         if destination_node_name and socket_name:
@@ -1132,11 +1224,27 @@ class Nodegraph(Basegraph):
                                                            socket_name)
             self.graph.signal_connection_made.emit(connection)
 
+    def on_plug_disconnected(self, source_node_name, plug_name, destination_node_name, socket_name):
+        if source_node_name and destination_node_name:
+            connection = self._get_shared_connection(source_node_name, plug_name, destination_node_name,
+                                                           socket_name)
+            if connection.socketItem:
+                self.graph.signal_disconnection_made.emit(connection)
+            connection.plugItem = None
+
     def on_socket_connected(self, source_node_name, plug_name, destination_node_name, socket_name):
         if source_node_name and plug_name:
             connection = self._get_shared_connection(source_node_name, plug_name, destination_node_name,
                                                            socket_name)
             self.graph.signal_connection_made.emit(connection)
+
+    def on_socket_disconnected(self, source_node_name, plug_name, destination_node_name, socket_name):
+        if source_node_name and destination_node_name:
+            connection = self._get_shared_connection(source_node_name, plug_name, destination_node_name,
+                                                           socket_name)
+            if connection.plugItem:
+                self.graph.signal_disconnection_made.emit(connection)
+            connection.socketItem = None
 
     def on_host_node_created(self, node_name, node_type):
         if not node_type in self.creation_field.available_items:
