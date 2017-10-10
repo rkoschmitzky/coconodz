@@ -251,8 +251,9 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     signal_layout_request = Qt.QtCore.Signal()
 
     def __init__(self, parent):
-        super(Nodz, self).__init__(parent)
-
+        # unfortunately nodz_main.Nodz expects a default config file at the same level as the module
+        # we pass our default here
+        super(Nodz, self).__init__(parent, configPath=self.BASE_CONFIG_PATH)
         self.initialize_configuration()
         self.config = self.configuration_data
 

@@ -2,7 +2,6 @@ import logging
 
 import pymel.core as pmc
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-import maya.utils
 
 from coconodz.etc.maya.ae.hooks import (DESIRED_HOOK,
                                         OWNER,

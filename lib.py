@@ -429,11 +429,16 @@ class ConfiguationMixin(object):
 
     """
     BASE_CONFIG_NAME = "nodegraph.config"
+    BASE_CONFIG_PATH = os.path.join(os.path.dirname(__file__), BASE_CONFIG_NAME)
 
     def __init__(self, *args, **kwargs):
-        super(ConfiguationMixin, self).__init__(*args)
-        self.__base_configuation_file = os.path.join(os.path.dirname(__file__), self.BASE_CONFIG_NAME)
+        super(ConfiguationMixin, self).__init__(*args, **kwargs)
+        self.__base_configuration_file = self.BASE_CONFIG_PATH
         self.__data = None
+
+    @property
+    def configuration_file(self):
+        return self.__base_configuration_file
 
     @property
     def configuration(self):
@@ -479,13 +484,13 @@ class ConfiguationMixin(object):
         data = read_json(configuration_file)
         self.configuration = DictDotLookup(data)
 
-    def initialize_configuration(self):
+    def initialize_configuration(self, *args):
         """ loads the predifined default configuration file and converts it to our proper configurarion object
 
         Returns:
 
         """
-        self.load_configuration(self.__base_configuation_file)
+        self.load_configuration(self.__base_configuration_file)
 
     def save_configuration(self, filepath):
         """ saves the current configuration as json schema
