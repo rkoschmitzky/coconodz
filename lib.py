@@ -433,7 +433,20 @@ class ConfiguationMixin(object):
 
     def __init__(self, *args, **kwargs):
         super(ConfiguationMixin, self).__init__(*args, **kwargs)
+
+        config = os.environ.get("COCONODZ_CONFIG_PATH", 0)
         self.__base_configuration_file = self.BASE_CONFIG_PATH
+
+        if config and not os.path.exists(config):
+            LOG.error("Configuration path {0} doesn't exist. Loading default configuration.".format(config))
+        elif config and os.path.exists(config):
+            try:
+                self.load_configuration(config)
+                self.__base_configuration_file = config
+            except:
+                LOG.error("Confguration file {} not readable.Loading default configuration.".format(config),
+                          exc_info=True)
+
         self.__data = None
 
     @property
@@ -485,7 +498,7 @@ class ConfiguationMixin(object):
         self.configuration = DictDotLookup(data)
 
     def initialize_configuration(self, *args):
-        """ loads the predifined default configuration file and converts it to our proper configurarion object
+        """ loads the predefined default configuration file and converts it to our proper configuration object
 
         Returns:
 

@@ -1,4 +1,5 @@
 import os
+import shutil
 import tempfile
 import time
 import unittest
@@ -73,7 +74,6 @@ class ConfigurationCase(TestCase):
         self.assertHasAttribute(Nodzgraph.configuration, "attr_default")
         self.assertHasAttribute(Nodzgraph.configuration, "datatype_default")
         self.assertHasAttribute(Nodzgraph.configuration, "layout_margin_size")
-
 
     def test_load_configuration(self):
         old_width = Nodzgraph.configuration.scene_width
