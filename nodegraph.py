@@ -353,6 +353,24 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         super(Nodz, self)._deleteSelectedNodes()
 
     def create_node(self, name, position=None, alternate=False, node_type="default"):
+        """ wrapper around Nodz.createNode to extend behavior
+
+        Args:
+            name: node name
+            position: if unset it will calculate the position based on the configuration
+            alternate: The attribute color alternate state, if True, every 2 attribute the color will be slightly darker
+            node_type: node type
+
+        Returns: NodeItem instance
+
+        """
+        if not position:
+            if self.configuration.node_placement == "cursor":
+                position = Qt.QtCore.QPointF(self.mapToScene(self.mapFromGlobal(Qt.QtGui.QCursor.pos())))
+            elif self.configuration.node_placement == "creation_field":
+                position = Qt.QtCore.QPointF(self.mapToScene(self.mapFromGlobal(self.creation_field.pos())))
+            else:
+                position = None
         _ = "node_{0}".format(node_type)
         if hasattr(self.configuration, _):
             # and create node with included preset

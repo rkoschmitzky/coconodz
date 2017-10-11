@@ -74,6 +74,7 @@ class ConfigurationCase(TestCase):
         self.assertHasAttribute(Nodzgraph.configuration, "attr_default")
         self.assertHasAttribute(Nodzgraph.configuration, "datatype_default")
         self.assertHasAttribute(Nodzgraph.configuration, "layout_margin_size")
+        self.assertHasAttribute(Nodzgraph.configuration, "node_placement")
 
     def test_load_configuration(self):
         old_width = Nodzgraph.configuration.scene_width
@@ -93,6 +94,17 @@ class ConfigurationCase(TestCase):
         except OSError:
             raise
 
+    def test_node_placement_value(self):
+        _supported = ["cursor", "creation_field"]
+        msg = "Unsupported attribute order value '{0}'. Supported are {1}".format(Nodzgraph.configuration.node_placement,
+                                                                                  ", ".join(_supported))
+        self.assertIn(Nodzgraph.configuration.node_placement, _supported, msg=msg)
+
+    def test_attribute_order_value(self):
+        _supported = ["top", "bottom", "alphabetical"]
+        msg = "Unsupported attribute order value '{0}'. Supported are {1}".format(Nodzgraph.configuration.attribute_order,
+                                                                                  ", ".join(_supported))
+        self.assertIn(Nodzgraph.configuration.attribute_order, _supported, msg=msg),
 
 class NodegraphCase(TestCase):
     """ test the nodegraphs functionality
