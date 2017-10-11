@@ -148,7 +148,7 @@ class NodeItem(nodz_main.NodeItem):
         return self._connections
 
     def append_connection(self, connection):
-        assert isinstance(connection, nodz_main.ConnectionItem)
+        assert isinstance(connection, ConnectionItem)
         self._connections.append(connection)
 
     def remove_connection(self, connection):
@@ -229,6 +229,37 @@ class NodeItem(nodz_main.NodeItem):
             connection.target_point = connection.target.center()
             connection.source_point = connection.source.center()
             connection.updatePath()
+
+
+class ConnectionItem(nodz_main.ConnectionItem):
+
+    def __init__(self, source_point, target_point, source, target, mode):
+        super(ConnectionItem, self).__init__(source_point, target_point, source, target)
+        self._mode = mode
+
+    def updatePath(self):
+        """
+        Update the path.
+
+        """
+        self.setPen(self._pen)
+
+        path = Qt.QtGui.QPainterPath()
+        path.moveTo(self.source_point)
+        dx = (self.target_point.x() - self.source_point.x()) * 0.5
+        dy = self.target_point.y() - self.source_point.y()
+        ctrl1 = Qt.QtCore.QPointF(self.source_point.x() + dx, self.source_point.y() + dy * 0)
+        ctrl2 = Qt.QtCore.QPointF(self.source_point.x() + dx, self.source_point.y() + dy * 1)
+
+        if not self._mode:
+            # using cubic bezier as default
+            path.cubicTo(ctrl1, ctrl2, self.target_point)
+        elif self._mode == "line":
+            path.lineTo(self.target_point)
+        elif self._mode == "bezier":
+            path.cubicTo(ctrl1, ctrl2, self.target_point)
+
+        self.setPath(path)
 
 
 class Nodz(ConfiguationMixin, nodz_main.Nodz):
@@ -454,7 +485,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         Returns:
 
         """
-        connection = nodz_main.ConnectionItem(plug.center(), socket.center(), plug, socket)
+        connection = ConnectionItem(plug.center(), socket.center(), plug, socket, self.configuration.connection_display_type)
 
         connection.plugNode = plug.parentItem().name
         connection.plugAttr = plug.attribute
@@ -470,12 +501,6 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         self.apply_data_type_color_to_connection(connection)
 
         self.scene().addItem(connection)
-
-        # lets store the connections on the nodes directly
-        # this will be necessary if attributes where added to the node and we have to loop through
-        # existing connections on the to to update their paths
-        #self.get_node_by_name(connection.plugNode).append_connection(connection)
-        #self.get_node_by_name(connection.socketNode).append_connection(connection)
 
         connection.updatePath()
 
@@ -813,7 +838,6 @@ class Nodegraph(Basegraph):
 
     def _delete_node(self, name):
         node = self.get_node_by_name(name)
-        print node
         if node:
             self.graph.deleteNode(node)
 

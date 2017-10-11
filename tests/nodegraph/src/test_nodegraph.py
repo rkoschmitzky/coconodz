@@ -96,7 +96,7 @@ class ConfigurationCase(TestCase):
 
     def test_node_placement_value(self):
         _supported = ["cursor", "creation_field"]
-        msg = "Unsupported attribute order value '{0}'. Supported are {1}".format(Nodzgraph.configuration.node_placement,
+        msg = "Unsupported  node_placement value '{0}'. Supported are {1}".format(Nodzgraph.configuration.node_placement,
                                                                                   ", ".join(_supported))
         self.assertIn(Nodzgraph.configuration.node_placement, _supported, msg=msg)
 
@@ -104,7 +104,14 @@ class ConfigurationCase(TestCase):
         _supported = ["top", "bottom", "alphabetical"]
         msg = "Unsupported attribute order value '{0}'. Supported are {1}".format(Nodzgraph.configuration.attribute_order,
                                                                                   ", ".join(_supported))
-        self.assertIn(Nodzgraph.configuration.attribute_order, _supported, msg=msg),
+        self.assertIn(Nodzgraph.configuration.attribute_order, _supported, msg=msg)
+
+    def test_connection_display_type(self):
+        _supported = ["line", "bezier"]
+        msg = "Unsupported connection_display_type value '{0}'. Supported are {1}".format(Nodzgraph.configuration.connection_display_type,
+                                                                                          ", ".join(_supported))
+        self.assertIn(Nodzgraph.configuration.connection_display_type, _supported, msg=msg)
+
 
 class NodegraphCase(TestCase):
     """ test the nodegraphs functionality
