@@ -4,7 +4,9 @@ import os
 import pprint
 import sys
 
-from coconodz import Qt
+from coconodz import (Qt,
+                      application
+                     )
 
 
 LOG = logging.getLogger(name="CocoNodz.nodegraph")
@@ -41,9 +43,14 @@ class BaseWindow(Qt.QtWidgets.QMainWindow):
 
     """
     TITLE = "CocoNodz Nodegraph"
+    PALETTE_PATH = os.path.join(os.path.dirname(__file__), "palette.config")
 
     def __init__(self, parent):
         super(BaseWindow, self).__init__(parent)
+
+        # apply the color palette
+        set_application_palette(self.PALETTE_PATH, application)
+
         self.__parent = parent
 
         self._setup_ui()
@@ -601,3 +608,48 @@ def reload_modules(namespace):
     for module in modules:
         reload(module)
         LOG.info("Reloaded module '{0}'".format(module))
+
+
+def set_application_palette(palette_filepath, application):
+    """ applies color palette to application
+
+    Args:
+        palette_filepath: serialized color palette
+        application: QApplication instance
+
+    Returns:
+
+    """
+    if application:
+        try:
+            palette_dict = read_json(palette_filepath)
+        except:
+            LOG.error("Palette file '{}' not readable".format(palette_filepath))
+
+        groups = ['Disabled',
+                  'Active',
+                  'Inactive',
+                  'Normal']
+        roles = ['Window',
+                 'Background',
+                 'WindowText',
+                 'Foreground',
+                 'Base',
+                 'AlternateBase',
+                 'ToolTipBase',
+                 'ToolTipText',
+                 'Text',
+                 'Button',
+                 'ButtonText',
+                 'BrightText']
+
+        palette = Qt.QtGui.QPalette()
+        for role in roles:
+            for group in groups:
+                group_color = Qt.QtGui.QColor(palette_dict['{0}:{1}'.format(role, group)])
+                group_group = getattr(Qt.QtGui.QPalette, group)
+                group_role = getattr(Qt.QtGui.QPalette, role)
+                palette.setColor(group_group, group_role, group_color)
+        application.setPalette(palette)
+    else:
+        LOG.info("Not running standalone. Inherit application palette")
