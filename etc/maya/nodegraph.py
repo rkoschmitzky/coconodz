@@ -220,6 +220,18 @@ class Nodzgraph(nodegraph.Nodegraph):
         """
         super(Nodzgraph, self).on_host_node_created(node_name, node_type)
 
+    def on_node_renamed(self, node, old_name, new_name):
+        try:
+            host_node = pmc.PyNode(old_name)
+        except:
+            LOG.warning("Node {} doesn't exist.".format(old_name))
+
+        try:
+            host_node.rename(new_name)
+        except:
+            LOG.warning("Not able to rename {}'".format(host_node))
+        super(Nodzgraph, self).on_node_renamed(node, old_name, new_name)
+
     @SuppressEvents("host_connection_made")
     def on_connection_made(self, connection):
         """ slot extension

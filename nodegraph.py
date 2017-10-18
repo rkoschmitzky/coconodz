@@ -273,6 +273,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     signal_node_created = Qt.QtCore.Signal(object)
     signal_nodes_deleted = Qt.QtCore.Signal(object)
     signal_after_node_created = Qt.QtCore.Signal(object)
+    signal_node_renamed = Qt.QtCore.Signal(object, str, str)
     signal_node_plug_created = Qt.QtCore.Signal(object)
     signal_node_socket_created = Qt.QtCore.Signal(object)
     signal_connection_made = Qt.QtCore.Signal(object)
@@ -460,6 +461,11 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
     def delete_node(self, name):
         raise NotImplementedError
+
+    def rename_node(self, node, new_name):
+        old_name = node.name
+        self.editNode(node, new_name)
+        self.signal_node_renamed.emit(node, old_name, new_name)
 
     def apply_data_type_color_to_connection(self, connection):
         """ takes and applies the color from the datatype to connection
@@ -1099,6 +1105,16 @@ class Nodegraph(Basegraph):
                                             self.on_nodes_deleted
                                             )
                               )
+        self.events.add_event("node_renamed",
+                              adder=self._connect_slot,
+                              adder_args=(self.graph.signal_node_renamed,
+                                          self.on_node_renamed
+                                          ),
+                              remover=self._disconnect_slot,
+                              remover_args=(self.graph.signal_node_renamed,
+                                            self.on_node_renamed
+                                            )
+                              )
         self.events.add_event("about_attribute_create",
                               adder=self._connect_slot,
                               adder_args=(self.graph.signal_about_attribute_create,
@@ -1212,7 +1228,7 @@ class Nodegraph(Basegraph):
 
     def on_rename_input_accepted(self, new_node_name):
         for node in self.selected_nodes:
-            self.graph.editNode(node=node, newName=new_node_name)
+            self.graph.rename_node(node, new_node_name)
 
     def on_context_request(self, widget):
         """ opens the field or context widgets based on widget type
@@ -1284,6 +1300,9 @@ class Nodegraph(Basegraph):
                                socket=self.configuration.default_socket,
                                data_type=self.configuration.default_attribute_data_type)
 
+    def on_node_renamed(self, node, old_name, new_name):
+        pass
+
     def on_nodes_deleted(self, nodeitems_list):
         pass
 
@@ -1342,7 +1361,7 @@ class Nodegraph(Basegraph):
         else:
             node = self.get_node_by_name(node_name)
             if node and node.node_type == node_type:
-                self.graph.editNode(node, node_name)
+                self.graph.rename_node(node, node_name)
             elif node and node_type != node_type:
                 LOG.warning("Host node misstmatch to graph node." +
                             "Expected nodetype '{0}' got '{1}'".format(node.node_type, node_type))
@@ -1357,7 +1376,7 @@ class Nodegraph(Basegraph):
     def on_host_node_renamed(self, new_name, old_name):
         node = self.get_node_by_name(old_name)
         if node:
-            self.graph.editNode(node, new_name)
+            self.graph.rename_node(node, new_name)
 
     def on_host_nodes_selected(self, node_name):
         node = self.get_node_by_name(node_name)
