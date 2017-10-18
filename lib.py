@@ -403,6 +403,69 @@ class SearchField(ContextWidget):
         self._setup_completer(self.mask)
 
 
+class RenameField(ContextWidget):
+    """ simeple RenameField widget we will use in Nodegraph
+
+    """
+    signal_input_accepted = Qt.QtCore.Signal(str)
+
+    VALIDATION_REGEX = "[A-Za-z0-9_]+"
+
+    def __init__(self, parent):
+        super(RenameField, self).__init__(parent)
+
+        self._items = []
+        self._validation_regex = self.VALIDATION_REGEX
+        self.setup_ui()
+
+    @property
+    def validation_regex(self):
+        """ holds the current regular expression pattern
+
+        Returns:
+
+        """
+        return self._validation_regex
+
+    @validation_regex.setter
+    def validation_regex(self, regex_str):
+        """ sets the validation regex that will be used in the mask
+
+        Args:
+            regex_str: string that holds the regular expression pattern
+
+        Returns:
+
+        """
+        assert isinstance(regex_str, basestring)
+
+        self._validation_regex = regex_str
+        self.setup_ui()
+
+    def setup_ui(self):
+        """ create base widgets and connection internal signals
+
+        Returns:
+
+        """
+        self.mask = Qt.QtWidgets.QLineEdit(self)
+        self.mask.setValidator( Qt.QtGui.QRegExpValidator(Qt.QtCore.QRegExp(self.validation_regex)))
+        self.context = self.mask
+        self.mask.setFocus()
+
+        self.mask.returnPressed.connect(self.on_accept)
+
+    def on_accept(self):
+        """ sends signal if input is accepted
+
+        Returns:
+
+        """
+        rename_input = str(self.mask.text())
+        self.signal_input_accepted.emit(rename_input)
+        self.close()
+
+
 class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
 
     def __init__(self, *args, **kwargs):

@@ -8,6 +8,7 @@ import nodz_utils
 from coconodz.lib import (BaseWindow,
                           GraphContext,
                           SearchField,
+                          RenameField,
                           AttributeContext,
                           ConfiguationMixin)
 from coconodz.events import (Events,
@@ -121,6 +122,7 @@ class NodeItem(nodz_main.NodeItem):
     signal_attr_created = Qt.QtCore.Signal(object)
     signal_socket_created = Qt.QtCore.Signal(object)
     signal_plug_created = Qt.QtCore.Signal(object)
+    signal_name_changed = Qt.QtCore.Signal(object)
 
     def __init__(self, name, alternate, preset, config):
         super(NodeItem, self).__init__(name, alternate, preset, config)
@@ -279,6 +281,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     signal_context_request = Qt.QtCore.Signal(object)
     signal_creation_field_request = Qt.QtCore.Signal()
     signal_search_field_request = Qt.QtCore.Signal()
+    signal_rename_field_request = Qt.QtCore.Signal()
     signal_layout_request = Qt.QtCore.Signal()
 
     def __init__(self, parent):
@@ -288,10 +291,15 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         self.initialize_configuration()
         self.config = self.configuration_data
 
+        self._rename_field = RenameField(self)
         self._search_field = SearchField(self)
         self._creation_field = SearchField(self)
         self._context = GraphContext(self)
         self._attribute_context = AttributeContext(self)
+
+    @property
+    def rename_field(self):
+        return self._rename_field
 
     @property
     def search_field(self):
@@ -359,6 +367,8 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
             self.signal_search_field_request.emit()
         if event.key() == Qt.QtCore.Qt.Key_L:
             self.signal_layout_request.emit()
+        if event.key() == Qt.QtCore.Qt.Key_R:
+            self.signal_rename_field_request.emit()
 
         # Emit signal.
         self.signal_KeyPressed.emit(event.key())
@@ -662,6 +672,7 @@ class Nodegraph(Basegraph):
 
     def __init__(self, parent=None):
         super(Nodegraph, self).__init__(parent=parent)
+
         # this can be overriden in subclasses to allow mixing in other classes
         # that are not host agnostic
         self._window = BaseWindow(parent)
@@ -739,6 +750,15 @@ class Nodegraph(Basegraph):
 
         """
         return self._events
+
+    @property
+    def rename_field(self):
+        """ holds the rename field instance
+
+        Returns: RenameField instance
+
+        """
+        return self.graph.rename_field
 
     @property
     def search_field(self):
@@ -1022,6 +1042,26 @@ class Nodegraph(Basegraph):
                                             self.on_layout_request
                                             )
                               )
+        self.events.add_event("rename_field_request",
+                              adder=self._connect_slot,
+                              adder_args=(self.graph.signal_rename_field_request,
+                                          self.on_rename_field_request
+                                          ),
+                              remover=self._disconnect_slot,
+                              remover_args=(self.graph.signal_rename_field_request,
+                                            self.on_rename_field_request
+                                            )
+                              )
+        self.events.add_event("rename_field_input_accepted",
+                              adder=self._connect_slot,
+                              adder_args=(self.rename_field.signal_input_accepted,
+                                          self.on_rename_input_accepted
+                                          ),
+                              remover=self._connect_slot,
+                              remover_args=(self.rename_field.signal_input_accepted,
+                                            self.on_rename_input_accepted
+                                            )
+                              )
         self.events.add_event("attribute_field_input_accepted",
                               adder=self._connect_slot,
                               adder_args=(self.attribute_context.signal_input_accepted,
@@ -1166,6 +1206,13 @@ class Nodegraph(Basegraph):
 
     def on_layout_request(self):
         self.layout_selected_nodes()
+
+    def on_rename_field_request(self):
+        self.rename_field.open()
+
+    def on_rename_input_accepted(self, new_node_name):
+        for node in self.selected_nodes:
+            self.graph.editNode(node=node, newName=new_node_name)
 
     def on_context_request(self, widget):
         """ opens the field or context widgets based on widget type
