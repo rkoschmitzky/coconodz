@@ -1,9 +1,21 @@
 # CocoNodz
 A unified and configurable Nodegraph wrapper for Visual Effects Applications
 
+
+## Table of Contents
+
+- [Project Goals](#project-goals)
+- [Documentation](#documentation)
+   - [Environment Variables](#required-or-useful-environment-variables)
+   - [Nodegraph Hotkeys](#nodegraph-hotkeys)
+- [Integrations](#integrations)
+   - [Standalone](#standalone)
+   - [Autodesk Maya Integration](#autodesk-maya-integration)
+   - [The Foundry Katana Integration](#the-foundry-katana-integration)
+   
 <br>
 
-## Project Gloals
+## Project Goals
 CocoNodz aims to provide a simple framework to integrate a unified and flexible Nodegraph into applications that supports Python and PyQt/PySide.
 Main Goals:
 
@@ -31,6 +43,7 @@ Main Goals:
 |:-----------------|:------------
 | RMB              | opens the context-aware graph widget
 | Ctrl + RMB       | opens the context-aware attribute tree widget, when executed over node
+| Alt + RMB        | zooms in and out the nodegraph canvas
 | Tab              | opens the node creation widget
 | F                | focus selected nodes
 | Ctrl + S         | opens the node search widget
@@ -39,34 +52,44 @@ Main Goals:
 ---
 <br>
 
-## Available Host Integrations
+## Integrations
 
 CocoNodz offers integrations for the following Applications
 
-- Autodesk Maya
-- The Foundry Katana
+- [Autodesk Maya Integration](#autodesk-maya-integration)
+- [The Foundry Katana Integration](#the-foundry-katana-integration)
  
 
 <br>
 
-### Standalone Nodzgraph
+### Standalone
 
 
 <br>
 
-### Maya Nodzgraph Integration
+### Autodesk Maya Integration
 
 #### How to install the CocoNodz Maya plugin
 
-To use CocoNodz within Maya you simple have to add the following paths to your environment.
+To use CocoNodz within Maya you have to add the following paths to your environment.
 
 ```
-COCONODZ_STARTUP = <path to coconodz root>
-MAYA_PLUG_IN_PATH = <path to coconodz root>\etc\maya\plugin
+COCONODZ_STARTUP=<path to coconodz root>
+MAYA_PLUG_IN_PATH=<path to coconodz root>\etc\maya\plugin
 ```
 
 Launch Maya and load the coconodz.py plugin. After successful initizalization you should be able to see a CocoNodz menu in Maya's menubar.
 
-### Katana Nodzgraph Integration
+### The Foundry Katana Integration
+
+To use CocoNodz within Katana you have to add the following paths to your environment.
+
+```
+QT_PREFERRED_BINDING=PyQt4
+QT_SIP_API_HINT=1
+COCONODZ_STARTUP<path to coconodz root>\coconodz
+KATANA_RESOURCES<path to coconodz root>\etc\katana
+```
 
 ---
+
