@@ -73,7 +73,97 @@ class Basegraph(object):
     def get_socket_by_name(self, socket_name):
         return self.get_slot_by_name(socket_name, "socket")
 
-    def on_node_name_changed(self, old_name, new_name):
+    def on_creation_field_request(self):
+        raise NotImplementedError
+
+    def on_search_field_request(self):
+        raise NotImplementedError
+
+    def on_layout_request(self):
+        raise NotImplementedError
+
+    def on_rename_field_request(self):
+        raise NotImplementedError
+
+    def on_rename_input_accepted(self, new_node_name):
+        raise NotImplementedError
+
+    def on_context_request(self, widget):
+        raise NotImplementedError
+
+    def on_creation_input_accepted(self, node_type):
+        raise NotImplementedError
+
+    def on_search_field_opened(self):
+        raise NotImplementedError
+
+    def on_search_input_accepted(self, node_name):
+        raise NotImplementedError
+
+    def on_attribute_input_accepted(self, node_name, attribute_name):
+        raise NotImplementedError
+
+    def on_node_created(self, node):
+        raise NotImplementedError
+
+    def on_after_node_created(self, node):
+        raise NotImplementedError
+
+    def on_node_name_changed(self, node, old_name, new_name):
+        raise NotImplementedError
+
+    def on_node_selected(self):
+        raise NotImplementedError
+
+    def on_nodes_deleted(self, nodeitems_list):
+        raise NotImplementedError
+
+    def on_about_attribute_create(self, node_name, attribute_name):
+        raise NotImplementedError
+
+    def on_plug_created(self, plug_item):
+        raise NotImplementedError
+
+    def on_socket_created(self, socket_item):
+        raise NotImplementedError
+
+    def on_connection_made(self, connection_item):
+        raise NotImplementedError
+
+    def on_disconnection_made(self, connection_item):
+        raise NotImplementedError
+
+    def on_plug_connected(self, source_node_name, plug_name, destination_node_name, socket_name):
+        raise NotImplementedError
+
+    def on_plug_disconnected(self, source_node_name, plug_name, destination_node_name, socket_name):
+        raise NotImplementedError
+
+    def on_socket_connected(self, source_node_name, plug_name, destination_node_name, socket_name):
+        raise NotImplementedError
+
+    def on_socket_disconnected(self, source_node_name, plug_name, destination_node_name, socket_name):
+        raise NotImplementedError
+
+    def on_host_node_created(self, node_name, node_type):
+        raise NotImplementedError
+
+    def on_host_node_deleted(self, node_name):
+        raise NotImplementedError
+
+    def on_host_node_name_changed(self, new_name, old_name):
+        raise NotImplementedError
+
+    def on_host_nodes_selected(self, node_name):
+        raise NotImplementedError
+
+    def on_host_node_deselected(self, node_name):
+        raise NotImplementedError
+
+    def on_host_connection_made(self, plug_name, socket_name):
+        raise NotImplementedError
+
+    def on_host_disconnection_made(self, plug_name, socket_name):
         raise NotImplementedError
 
     def reset_configuration(self):
@@ -273,7 +363,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     signal_node_created = Qt.QtCore.Signal(object)
     signal_nodes_deleted = Qt.QtCore.Signal(object)
     signal_after_node_created = Qt.QtCore.Signal(object)
-    signal_node_renamed = Qt.QtCore.Signal(object, str, str)
+    signal_node_name_changed = Qt.QtCore.Signal(object, str, str)
     signal_node_plug_created = Qt.QtCore.Signal(object)
     signal_node_socket_created = Qt.QtCore.Signal(object)
     signal_connection_made = Qt.QtCore.Signal(object)
@@ -464,8 +554,9 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
     def rename_node(self, node, new_name):
         old_name = node.name
-        self.editNode(node, new_name)
-        self.signal_node_renamed.emit(node, old_name, new_name)
+        if old_name != new_name:
+            self.editNode(node, new_name)
+            self.signal_node_name_changed.emit(node, old_name, new_name)
 
     def apply_data_type_color_to_connection(self, connection):
         """ takes and applies the color from the datatype to connection
@@ -1105,14 +1196,14 @@ class Nodegraph(Basegraph):
                                             self.on_nodes_deleted
                                             )
                               )
-        self.events.add_event("node_renamed",
+        self.events.add_event("node_name_changed",
                               adder=self._connect_slot,
-                              adder_args=(self.graph.signal_node_renamed,
-                                          self.on_node_renamed
+                              adder_args=(self.graph.signal_node_name_changed,
+                                          self.on_node_name_changed
                                           ),
                               remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_node_renamed,
-                                            self.on_node_renamed
+                              remover_args=(self.graph.signal_node_name_changed,
+                                            self.on_node_name_changed
                                             )
                               )
         self.events.add_event("about_attribute_create",
@@ -1300,7 +1391,10 @@ class Nodegraph(Basegraph):
                                socket=self.configuration.default_socket,
                                data_type=self.configuration.default_attribute_data_type)
 
-    def on_node_renamed(self, node, old_name, new_name):
+    def on_node_name_changed(self, node, old_name, new_name):
+        pass
+
+    def on_node_selected(self):
         pass
 
     def on_nodes_deleted(self, nodeitems_list):
@@ -1373,10 +1467,11 @@ class Nodegraph(Basegraph):
         if node:
             self.graph.deleteNode(node)
 
-    def on_host_node_renamed(self, new_name, old_name):
-        node = self.get_node_by_name(old_name)
-        if node:
-            self.graph.rename_node(node, new_name)
+    def on_host_node_name_changed(self, new_name, old_name):
+        if new_name != old_name:
+            node = self.get_node_by_name(old_name)
+            if node:
+                self.graph.rename_node(node, new_name)
 
     def on_host_nodes_selected(self, node_name):
         node = self.get_node_by_name(node_name)

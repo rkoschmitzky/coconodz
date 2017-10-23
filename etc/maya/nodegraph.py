@@ -80,7 +80,7 @@ class Nodzgraph(nodegraph.Nodegraph):
                               )
         self.events.add_event("host_node_name_changed",
                               adder=callbacks.add_node_name_changed_callback,
-                              adder_args=(self.on_host_node_renamed, )
+                              adder_args=(self.on_host_node_name_changed,)
                               )
         self.events.attach_remover("host_node_name_changed",
                                    callable=callbacks.remove_callbacks_only,
@@ -220,7 +220,8 @@ class Nodzgraph(nodegraph.Nodegraph):
         """
         super(Nodzgraph, self).on_host_node_created(node_name, node_type)
 
-    def on_node_renamed(self, node, old_name, new_name):
+    @SuppressEvents("host_node_name_changed")
+    def on_node_name_changed(self, node, old_name, new_name):
         try:
             host_node = pmc.PyNode(old_name)
         except:
@@ -229,8 +230,12 @@ class Nodzgraph(nodegraph.Nodegraph):
         try:
             host_node.rename(new_name)
         except:
-            LOG.warning("Not able to rename {}'".format(host_node))
-        super(Nodzgraph, self).on_node_renamed(node, old_name, new_name)
+            LOG.warning("Not able to rename {}'".format(old_name))
+        super(Nodzgraph, self).on_node_name_changed(node, old_name, new_name)
+
+    @SuppressEvents("node_name_changed")
+    def on_host_node_name_changed(self, new_name, old_name):
+        super(Nodzgraph, self).on_host_node_name_changed(new_name, old_name)
 
     @SuppressEvents("host_connection_made")
     def on_connection_made(self, connection):

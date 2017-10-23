@@ -31,8 +31,9 @@ def add_node_name_changed_callback(callable):
 
     def _get_names(node, prevName, clientData):
         current_name = pmc.PyNode(node).name()
-        result = callable(current_name, prevName)
-        return result
+        if prevName and (current_name != prevName):
+            result = callable(current_name, prevName)
+            return result
 
     return om.MNodeMessage.addNameChangedCallback(om.MObject(), _get_names)
 
