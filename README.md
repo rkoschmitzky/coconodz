@@ -12,14 +12,14 @@ A unified and configurable Nodegraph wrapper for Visual Effects Applications
    - [Standalone](#standalone)
    - [Autodesk Maya Integration](#autodesk-maya-integration)
    - [The Foundry Katana Integration](#the-foundry-katana-integration)
-   
+
 <br>
 
 ## Project Goals
 CocoNodz aims to provide a simple framework to integrate a unified and flexible Nodegraph into applications that supports Python and PyQt/PySide.
 Main Goals:
 
-- only use a single nodegraph between different applications, OSX, linux, Windows
+- use a single nodegraph between different applications, OSX, linux, Windows
 - customize and extend it where native applications nodegraph are lacking functionality or limiting customizability
 - provide a simple system for users to extend it with custom code snippets
 - load and share shading networks
@@ -52,8 +52,81 @@ Main Goals:
 ---
 <br>
 
-## Integrations
+<<<<<<< HEAD
 
+#### overall configuration
+
+| Value                            |  Type  |Description
+|:---------------------------------|:-------|:------------
+| output_verbosity                 | string | logging verbosity, supported are "critical", "error", "warning", "info", "debug"
+| scene_width                      | int    | default graph width
+| scene_height                     | int    | default graph height
+| grid_size                        | int    | default graph grid size
+| antialiasing                     | bool   |
+| antialiasing_boost               | bool   |
+| smooth_pixmap                    | bool   |
+| attribute_order                  | string | attribute creation order, supported are "top", "bottom", "alphabetical"
+| available_node_types             | list   | the nodetypes that will be available in the creation field widget by default
+| default_attribute_name           | string | name of the default attribute
+| default_attribute_data_type      | string | datatype of the default attribute
+| default_socket                   | bool   | if true it will add the attribute as socket
+| default_plug                     | bool   | if true it will add the attribute as plug
+| node_font                        | string | font used for all nodes
+| node_font_size                   | int    | font size used for all nodes
+| attr_font                        | string | font used for all attributes
+| attr_font_size                   | int    | font size used for all attributes
+| mouse_bounding_box               | int    |
+| node_width                       | int    | default node width
+| node_height                      | int    | default node height
+| node_radius                      | int    | default node radius
+| node_border                      | int    | default node border size
+| node_attr_height                 | int    | default attribute height
+| connection_width                 | int    | default connection pixel width
+| alternate_value                  | int    | alternates background color on attributes
+| grid_color                       | list   | color the canvas grid will use
+| slot_border                      | list   |
+| non_connectable_color            | list   | color the connection will use when attributes are not connectable, RGBA color list 0-255
+| connection_display_type          | string | connection shape, "bezier", linear
+| connection_inherit_datatype_color| bool   | if true connection will use the color specified for data type
+| connection_color                 | list   | default color the connection when not inheriting the data type color, RGBA color list 0-255
+| layout_margin_size               | int    |
+| node_placement                   | string | specifies where a created node will be placed, supported "cursor" - uses the cursor position, creation field - uses position of the creation field widget
+
+<br>
+
+#### node configuration
+
+The configuration color configuration per node type, it needs to start with node_ followed by the nodetype and must include
+specific values.
+
+| Value                            |  Type  |Description
+|:---------------------------------|:-------|:------------
+| bg                               | list   | node color, RGBA color list 0-255
+| border                           | list   | node border color when node is unselected, RGBA color list 0-255
+| border_sel                       | list   | node border color when node is selected, RGBA color list 0-255
+| text                             | list   | node text color, RGBA color list 0-255
+
+**node_default** will be used for all unspecified node types
+
+<br>
+
+#### attribute configuration
+
+Same as in the node configuration color configuration per attribute data type can be specified, it needs to start with attr_ followed by the nodetype and must include
+specific values.
+
+| Value                            |  Type  |Description
+|:---------------------------------|:-------|:------------
+| bg                               | list   | attribute background color, RGBA color list 0-255
+| text                             | list   | attribute text color, RGBA color list 0-255
+| plug                             | list   | attribute plug color, RGBA color list 0-255
+| socket                           | list   | attribute slot color,  RGBA color list 0-255
+
+<br>
+
+## Available Host Integrations
+=======
+## Integrations
 CocoNodz offers integrations for the following Applications
 
 - [Autodesk Maya Integration](#autodesk-maya-integration)
@@ -77,6 +150,21 @@ To use CocoNodz within Maya you have to add the following paths to your environm
 COCONODZ_STARTUP=<path to coconodz root>
 MAYA_PLUG_IN_PATH=<path to coconodz root>\etc\maya\plugin
 ```
+
+#### maya configuration
+
+The Maya integration allows additional configurations
+
+| Value                            |  Type  |Description
+|:---------------------------------|:-------|:------------
+| docked                           | bool   | specified if the window will be dockable or not
+| dock_area                        | string | specifies the default dock area when the nodegraph will be docked
+| allowed_dock_areas               | string | specifies if the dockable window can be docked left, right or everywhere, supported are "left", "right", "all"
+| floating                         | bool   | specifies is the window will be docked or float
+| width                            | int    | default width of the window
+| height                           | int    | default height of the window
+| available_node_categories        | list   | will add multiple node types based on the node type categories, e.g: "shader", "texture"
+
 
 Launch Maya and load the coconodz.py plugin. After successful initizalization you should be able to see a CocoNodz menu in Maya's menubar.
 
