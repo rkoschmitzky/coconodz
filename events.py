@@ -6,10 +6,11 @@ LOG = logging.getLogger(name="CocoNodz.events")
 
 
 class Events(Singleton):
-    """ base class other specific event classes should inherit from, which includes the base methods for adding
-    and removing events
+    """ class should help to keep custom eventhandling more organized and robust
 
-    This class should help to keep custom eventhandling more organized
+    The class will help to avoid double registrations of events and provides a simple
+    interface for event registration & deregistration; listing, pausing & resuming events.
+    It is application agnostic through usage of events adder/remover callables.
     """
 
     __data = {}

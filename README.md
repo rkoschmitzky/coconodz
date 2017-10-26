@@ -52,8 +52,6 @@ Main Goals:
 ---
 <br>
 
-<<<<<<< HEAD
-
 #### overall configuration
 
 | Value                            |  Type  |Description
@@ -124,8 +122,7 @@ specific values.
 
 <br>
 
-## Available Host Integrations
-=======
+
 ## Integrations
 CocoNodz offers integrations for the following Applications
 

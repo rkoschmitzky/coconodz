@@ -20,7 +20,9 @@ class Singleton(object):
 
 
 class SafeOpen(object):
+    """ safer handler to open files
 
+    """
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
@@ -90,7 +92,14 @@ class BaseWindow(Qt.QtWidgets.QMainWindow):
 
 
 class ContextWidget(Qt.QtWidgets.QMenu):
+    """ global context widget
 
+    The context widget is the main class and it should be accessed in the nodegraph
+    when pressing a mousebutton or key.
+
+    For the moment we will use the QMenu for that, but the long running goal is to
+    have a proper hotbox widget we can mixin or inherit from
+    """
     signal_available_items_changed = Qt.QtCore.Signal()
     signal_opened = Qt.QtCore.Signal()
 
@@ -103,6 +112,14 @@ class ContextWidget(Qt.QtWidgets.QMenu):
 
     @property
     def available_items(self):
+        """ available items dictionary
+
+        This will dependent on the subclass and can be anything like QActions, QButtons, list.
+        We choose as dictionary as base, because it will be the most flexible approach
+
+        Returns: dict
+
+        """
         return self._items
 
     @available_items.setter
@@ -112,14 +129,32 @@ class ContextWidget(Qt.QtWidgets.QMenu):
 
     @property
     def context(self):
+        """ holds the "real" context widget
+
+        Returns: QWidget instance
+
+        """
         return self._context
 
     @context.setter
     def context(self, context_widget):
+        """ sets the "real" context widget
+
+        Args:
+            context_widget: QWidget instance
+
+        Returns:
+
+        """
         self._context = context_widget
         self._update_context()
 
     def _update_context(self):
+        """ clears the underlying menu and replaces the default widget with set context
+
+        Returns:
+
+        """
         self.clear()
         action = Qt.QtWidgets.QWidgetAction(self)
         action.setDefaultWidget(self.context)
@@ -266,6 +301,11 @@ class AttributeContext(ContextWidget):
         _add_items(tree_widget, self.available_items)
 
     def setup_ui(self):
+        """ sets up the context and connects all signals
+
+        Returns:
+
+        """
         super(AttributeContext, self).setup_ui()
 
         widget = Qt.QtWidgets.QWidget(self)
@@ -294,7 +334,7 @@ class AttributeContext(ContextWidget):
         self.mask_widget = mask
 
     def on_available_items_changed(self):
-        """ actions that should run if items have changed
+        """ should rebuild the context when available items changed
 
         Returns:
 
@@ -302,6 +342,14 @@ class AttributeContext(ContextWidget):
         self.setup_ui()
 
     def on_tree_double_clicked(self, index):
+        """ defines whar will happen when the tree was double-clicked
+
+        Args:
+            index:
+
+        Returns:
+
+        """
         if self.tree_widget:
             self.signal_input_accepted.emit(self.property("node_name"),
                                             self.tree_widget.itemFromIndex(index).text(self._column))
@@ -345,7 +393,7 @@ class AttributeContext(ContextWidget):
 
 
 class SearchField(ContextWidget):
-    """ simple SearchField Widget we will use in the nodegraph
+    """ simple SearchField Widget we will use so search for nodes in the nodegraph
 
     """
     signal_input_accepted = Qt.QtCore.Signal(str)
@@ -475,7 +523,9 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
 
 
 class Menu(Qt.QtWidgets.QMenu):
+    """ the main CocoNodz menu we will provide for each application integration
 
+    """
     MENU_NAME = "CocoNodz"
 
     def __init__(self, menu_bar):
@@ -521,6 +571,11 @@ class ConfiguationMixin(object):
 
     @property
     def configuration_file(self):
+        """ holds the file the configuration is based on
+
+        Returns:
+
+        """
         return self.__base_configuration_file
 
     @property
