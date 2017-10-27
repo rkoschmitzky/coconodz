@@ -537,11 +537,15 @@ class Menu(Qt.QtWidgets.QMenu):
     def init(self):
         self.menu_bar.addMenu(self)
 
-    def add_action(self, title, icon=None):
-        if icon:
-            raise NotImplementedError
+    def add_action(self, title, iconpath=None):
 
-        return self.addAction(title)
+        assert os.path.exists(iconpath), "Icon path {} does not exist.".format(iconpath)
+
+        action = self.addAction(title)
+        if iconpath:
+            action.setIcon(Qt.QtGui.QIcon(iconpath))
+
+        return action
 
 
 class ConfiguationMixin(object):

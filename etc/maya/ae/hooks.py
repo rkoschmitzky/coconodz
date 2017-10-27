@@ -1,3 +1,5 @@
+import os
+
 import pymel.core as pmc
 import maya.OpenMayaUI as omui
 
@@ -6,7 +8,7 @@ from coconodz import Qt
 
 DESIRED_HOOK = "AETemplateCustomContent"
 OWNER = "CocoNodz"
-
+COCONODZ_ICON = os.path.abspath(os.path.join(os.path.dirname(Qt.__file__), "..", "icons", "coconodz.png"))
 
 class AEHook(pmc.ui.AETemplate):
     """ AETemplateCustomContent
@@ -46,6 +48,7 @@ class AEHook(pmc.ui.AETemplate):
         maya_button = pmc.button("nodegraph_eval", label=self.nodegraph_button_title)
         ptr = omui.MQtUtil.findControl(maya_button)
         button = Qt.QtCompat.wrapInstance(long(ptr), Qt.QtWidgets.QPushButton)
+        button.setIcon(Qt.QtGui.QPixmap(COCONODZ_ICON))
         button.clicked.connect(self.open_nodzgraph)
 
         pmc.setUITemplate('attributeEditorTemplate', popTemplate=True)
