@@ -20,6 +20,9 @@ LOG = logging.getLogger(name="CocoNodz.nodegraph")
 
 
 class Basegraph(object):
+    """ base graph class that should defined all available properties and methods
+
+    """
 
     def __init__(self, *args, **kwargs):
         super(Basegraph, self).__init__()
@@ -207,6 +210,10 @@ class Basegraph(object):
 
 
 class NodeItem(nodz_main.NodeItem):
+    """ extends the nodz_main.NodeItem class
+
+    Original implementation customization
+    """
 
     signal_context_request = Qt.QtCore.Signal(object)
     signal_attr_created = Qt.QtCore.Signal(object)
@@ -228,26 +235,69 @@ class NodeItem(nodz_main.NodeItem):
 
     @property
     def node_type(self):
+        """ holds the nodes node type
+
+        Returns: string node type
+
+        """
         return self._node_type
 
     @node_type.setter
     def node_type(self, value):
+        """ sets the nodes node type
+
+        Args:
+            value: node type string
+
+        Returns:
+
+        """
         assert isinstance(value, basestring)
         self._node_type = value
 
     @property
     def connections(self):
+        """ holds all the connections to the node
+
+        Returns: ConnectionItem list
+
+        """
         return self._connections
 
     def append_connection(self, connection):
+        """ appends the stored node connection to the connections list
+
+        Args:
+            connection: ConnectionItem instance
+
+        Returns:
+
+        """
         assert isinstance(connection, ConnectionItem)
         self._connections.append(connection)
 
     def remove_connection(self, connection):
+        """ removes a stored node connection from stored node connections list
+
+        Args:
+            connection: ConnectionItem instance
+
+        Returns:
+
+        """
         if connection in self.connections:
             self.connections.remove(connection)
 
     def mousePressEvent(self, event):
+        """ extend the mousePressEvent
+
+        We are adding a context widget request on RMB click here
+        Args:
+            event:
+
+        Returns:
+
+        """
         if (event.button() == Qt.QtCore.Qt.RightButton and
             event.modifiers() == Qt.QtCore.Qt.ControlModifier):
             self.signal_context_request.emit(self)
@@ -259,11 +309,10 @@ class NodeItem(nodz_main.NodeItem):
 
         Args:
             name:
-            add_mode:
-            preset:
-            plug:
-            socket:
-            data_type:
+            add_mode: defines where on the node the attribute will be placed, "top", "bottom", "alphabetical"
+            plug: if True the attribute will be added as plug
+            socket: if True the attribute will be added as socket
+            data_type: attribute data type
 
         Returns:
 
@@ -324,14 +373,21 @@ class NodeItem(nodz_main.NodeItem):
 
 
 class ConnectionItem(nodz_main.ConnectionItem):
+    """ extends the nodz_main.ConnectionItem class
+
+    Original implementation customization
+    """
 
     def __init__(self, source_point, target_point, source, target, mode):
         super(ConnectionItem, self).__init__(source_point, target_point, source, target)
         self._mode = mode
 
     def updatePath(self):
-        """
-        Update the path.
+        """ overrides the original method
+
+        We added support for configurable path shapes here
+
+        Returns:
 
         """
         self.setPen(self._pen)
@@ -355,9 +411,9 @@ class ConnectionItem(nodz_main.ConnectionItem):
 
 
 class Nodz(ConfiguationMixin, nodz_main.Nodz):
-    """ This class will let us override or extend behavior
-    for the purpose of better customization
+    """ extends the nodz_main.Nodz class
 
+    Original implementation customization
     """
 
     signal_node_created = Qt.QtCore.Signal(object)
@@ -432,15 +488,15 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         return self._attribute_context
 
     def keyPressEvent(self, event):
-        """ overriding the keyPressEvent method
+        """ overrides the mousePressEvent
 
+        We are adding more key press events here
         Args:
             event:
 
         Returns:
 
         """
-
         if event.key() not in self.pressedKeys:
             self.pressedKeys.append(event.key())
         if event.key() == Qt.QtCore.Qt.Key_Delete:
@@ -465,15 +521,15 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         self.signal_KeyPressed.emit(event.key())
 
     def mousePressEvent(self, event):
-        """ extending the mousePressEvent
+        """ extends the mousePressEvent
 
+        We are adding a context widget request on RMB click here
         Args:
             event:
 
         Returns:
 
         """
-
         if (event.button() == Qt.QtCore.Qt.RightButton and
             event.modifiers() == Qt.QtCore.Qt.NoModifier):
             self.signal_context_request.emit(self)
@@ -481,11 +537,17 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         super(Nodz, self).mousePressEvent(event)
 
     def _deleteSelectedNodes(self):
+        """ overrides original method
+
+        Let us emit a signal on nodes deletion
+        Returns:
+
+        """
         self.signal_nodes_deleted.emit([_ for _ in self.scene().selectedItems() if isinstance(_, NodeItem)])
         super(Nodz, self)._deleteSelectedNodes()
 
     def create_node(self, name, position=None, alternate=False, node_type="default"):
-        """ wrapper around Nodz.createNode to extend behavior
+        """ wrapper around Nodz.createNode() to extend behavior
 
         Args:
             name: node name
@@ -516,7 +578,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         return node
 
     def createNode(self, name="default", preset="node_default", position=None, alternate=True, node_type="default"):
-        """ overriding createNode method
+        """ overrides the createNode method
 
         Args:
             name:
@@ -553,13 +615,22 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         raise NotImplementedError
 
     def rename_node(self, node, new_name):
+        """ gives specified node a new name
+
+        Args:
+            node: NodeItem instance
+            new_name: new name
+
+        Returns:
+
+        """
         old_name = node.name
         if old_name != new_name:
             self.editNode(node, new_name)
             self.signal_node_name_changed.emit(node, old_name, new_name)
 
     def apply_data_type_color_to_connection(self, connection):
-        """ takes and applies the color from the datatype to connection
+        """ takes and applies the data type color to the connection
 
         Args:
             connection: ConnectionItemInstance
@@ -578,13 +649,23 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
                 connection._pen = color
 
     def connect_attributes(self, plug, socket):
+        """ creates a new ConnectionItem instance that connects plug and socket
+
+        Args:
+            plug:
+            socket:
+
+        Returns:
+
+        """
         connection = self.createConnection(plug, socket)
 
         return connection
 
     def createConnection(self, plug, socket):
-        """ extends the default behavior
+        """ extends the createConnection
 
+        We are adding the possibility to apply data type color to the connection here
         Args:
             plug:
             socket:
@@ -604,7 +685,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         plug.connect(socket, connection)
         socket.connect(plug, connection)
 
-        # let us apply the corresponding datatype color
+        # let us apply the corresponding data type color
         self.apply_data_type_color_to_connection(connection)
 
         self.scene().addItem(connection)
@@ -930,6 +1011,12 @@ class Nodegraph(Basegraph):
         # @todo update functionality
 
     def clear(self):
+        """ removes all nodes and connections from graph
+
+        This will not emit any deletion signals
+        Returns:
+
+        """
         self.graph.clearGraph()
         # clean nodes_dict
         self._all_nodes = {}
@@ -939,6 +1026,22 @@ class Nodegraph(Basegraph):
 
     @SuppressEvents(["after_node_created", "socket_created", "plug_created", "connection_made", "plug_connected", "socket_connected"])
     def display_host_nodes(self, nodes_dict, attributes_dict={}, connections_dict={}):
+        """ will add nodes their attributes and connections to nodegraph
+
+        This will not emit any creation signals and is meant to be a display and not a creation utility function
+        Args:
+            nodes_dict: dictionary that includes the node as key and the node type as value
+            attributes_dict: dictionary that holds the attribute as key and a type and data_type description like this
+            {"shader1.color": {"node_type": "shader"
+                               "type": "plug"
+                               "data_type": "color"
+                               }
+            }
+            connections_dict: dictionary that includes a pair of attributes
+
+        Returns:
+
+        """
         # @todo estimate creation position
         for node_name, node_type in nodes_dict.iteritems():
             self.graph.create_node(name=node_name, node_type=node_type)
@@ -948,12 +1051,29 @@ class Nodegraph(Basegraph):
 
     @SuppressEvents("node_deleted")
     def undisplay_node(self, node_name):
+        """ will remove nodes and their connections from nodegraph
+
+        This will not emit any deletion signals and is meant to be an undisplay and not a deletion utilitiy function
+        Args:
+            node_name: name of the node
+
+        Returns:
+
+        """
         self.graph.delete_node(node_name)
 
     def _filter_attributes_dict(self):
         pass
 
     def _delete_node(self, name):
+        """ delete a node by given name and emit signal
+
+        Args:
+            name: node name
+
+        Returns:
+
+        """
         node = self.get_node_by_name(name)
         if node:
             self.graph.deleteNode(node)
@@ -1039,7 +1159,8 @@ class Nodegraph(Basegraph):
         """ creates connections for available attributes in nodegraph
 
         Args:
-            connections_dict: dictionary that holds the source attribute as key and destination attribute as value
+            connections_dict: dictionary that holds the source attribute as key and destination attribute as value like this
+            {"lambert1.color": "surfaceShader2.color"}
 
         Returns:
 
@@ -1053,12 +1174,27 @@ class Nodegraph(Basegraph):
                 self.__handle_connection(plug, socket, True)
 
     def _get_shared_connection(self, source_node_name, plug_name, destination_node_name, socket_name):
+        """ helper function to get the ConnectionItem based on node-, plug and socket names
+
+        Args:
+            source_node_name: source node name
+            plug_name: plug name
+            destination_node_name: destination name
+            socket_name: socket name
+
+        Returns: ConnectionItem instance
+
+        """
         plug = self.get_plug_by_name("{0}.{1}".format(source_node_name, plug_name))
         socket = self.get_socket_by_name("{0}.{1}".format(destination_node_name, socket_name))
         return self.graph.get_shared_connection(plug, socket)
 
     def register_events(self):
-        """ setup events by connecting all signals and slots
+        """ sets up all events that will be needed to run CocoNodz without integration
+
+        Integration doesn't have to re-register certain events, all events here have to be
+        generic enough, their callback functions can be extended or overriden in the specific
+        integration
 
         Returns:
 
@@ -1068,7 +1204,7 @@ class Nodegraph(Basegraph):
         self.graph.on_plug_created = self.on_plug_created
         self.graph.on_socket_created = self.on_socket_created
 
-        # @todo remove boilerplate
+        # @todo use a event factory to remove boilerplate
         self.events.add_event("creation_field_request",
                               adder=self._connect_slot,
                               adder_args=(self.graph.signal_creation_field_request,
@@ -1297,7 +1433,7 @@ class Nodegraph(Basegraph):
                               )
 
     def layout_selected_nodes(self):
-        """ rearranges node the node positions of selected nodes
+        """ rearranges node positions of selected nodes
 
         Returns:
 
@@ -1306,23 +1442,61 @@ class Nodegraph(Basegraph):
             self.graph.layout_nodes(self.selected_node_names)
 
     def on_creation_field_request(self):
+        """ should be called when a creation_field_request signal was emitted
+
+        It will open the creation field widget
+
+        Returns:
+
+        """
         self.creation_field.open()
 
     def on_search_field_request(self):
+        """ should be called when a search_field_request was emitted
+
+        It will open the search field widget
+
+        Returns:
+
+        """
         self.search_field.open()
 
     def on_layout_request(self):
+        """ should be called when a layout_request was emitted
+
+        It will start the layout process
+
+        Returns:
+
+        """
         self.layout_selected_nodes()
 
     def on_rename_field_request(self):
+        """ should be called when a rename_field_request was emitted
+
+        It will open the rename field widget
+
+        Returns:
+
+        """
         self.rename_field.open()
 
     def on_rename_input_accepted(self, new_node_name):
+        """ should be called when a rename_input_accepted signal was emitted
+
+        Args:
+            new_node_name: new node name
+
+        Returns:
+
+        """
         for node in self.selected_nodes:
             self.graph.rename_node(node, new_node_name)
 
     def on_context_request(self, widget):
-        """ opens the field or context widgets based on widget type
+        """ should be called when a context_request signal was emitted
+
+        Opens the specific field or context widgets based on widget type
 
         Args:
             widget: Nodz or NodeItem or SocketItem or PlugItem instance
@@ -1345,11 +1519,10 @@ class Nodegraph(Basegraph):
         return _to_open
 
     def on_creation_input_accepted(self, node_type):
-        """ creates a NodeItem of given type and emit additional signals
+        """ should be called when a creation field widgets input_accepted signal was emitted
 
-        This will always emit a host_node_created signal, which behaves like
-        some kind of callback, but makes it easier for us to modify and
-        reuse them.
+        creates a NodeItem of given type and emit additional signals
+
         Args:
             node_type: type of the node
 
@@ -1359,13 +1532,22 @@ class Nodegraph(Basegraph):
         self.graph.create_node(node_type, node_type=node_type)
 
     def on_search_field_opened(self):
+        """ should be called when a search_fields opened signal was emitted
+
+        Updated the available search field items to represent the available nodes in nodegraph
+
+        Returns:
+
+        """
         self.search_field.available_items = self.all_node_names
 
     def on_search_input_accepted(self, node_name):
-        """ selects and focus the node by the given name from the searchfield
+        """ should be called when the search field widgets input_accepted signal was emitted
+
+        Selects and focus the node by the given name from the searchfield
 
         Args:
-            node_name: name of an existing node
+            node_name: name of a node (expect an existing one)
 
         Returns:
 
@@ -1375,10 +1557,31 @@ class Nodegraph(Basegraph):
             self.graph._focus()
 
     def on_attribute_input_accepted(self, node_name, attribute_name):
+        """ should be called when the attribute field widgets input_accepted signal was emitted
+
+        Will close the attribute field widget and emit a different signal that sends the node
+        and chosen attribute name
+
+        Args:
+            node_name: name of the node
+            attribute_name: name of the node that is selected in the widget
+
+        Returns:
+
+        """
         self.graph.attribute_context.close()
         self.graph.signal_about_attribute_create.emit(node_name, attribute_name)
 
     def on_node_created(self, node):
+        """ should be called when the a node_created signal was emitted
+
+        Will add the node to our nodes dict and emit a after_node_created signal
+        Args:
+            node: NodeItem instance
+
+        Returns:
+
+        """
         self.nodes_dict[node.name] = node
         if node:
             self.graph.signal_after_node_created.emit(node)
