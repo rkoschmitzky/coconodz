@@ -673,7 +673,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         Returns:
 
         """
-        connection = ConnectionItem(plug.center(), socket.center(), plug, socket, self.configuration.connection_display_type)
+        connection = ConnectionItem(plug.center(), socket.center(), plug, socket, self.configuration.connection_interpolation)
 
         connection.plugNode = plug.parentItem().name
         connection.plugAttr = plug.attribute

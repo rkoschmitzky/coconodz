@@ -84,7 +84,7 @@ Main Goals:
 | grid_color                       | list   | color the canvas grid will use
 | slot_border                      | list   |
 | non_connectable_color            | list   | color the connection will use when attributes are not connectable, RGBA color list 0-255
-| connection_display_type          | string | connection shape, "bezier", linear
+| connection_interpolation         | string | connection shape, "bezier", linear
 | connection_inherit_datatype_color| bool   | if true connection will use the color specified for data type
 | connection_color                 | list   | default color the connection when not inheriting the data type color, RGBA color list 0-255
 | layout_margin_size               | int    |

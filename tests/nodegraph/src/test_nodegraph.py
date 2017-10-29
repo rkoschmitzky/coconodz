@@ -108,9 +108,9 @@ class ConfigurationCase(TestCase):
 
     def test_connection_display_type(self):
         _supported = ["line", "bezier"]
-        msg = "Unsupported connection_display_type value '{0}'. Supported are {1}".format(Nodzgraph.configuration.connection_display_type,
+        msg = "Unsupported connection_interpolation value '{0}'. Supported are {1}".format(Nodzgraph.configuration.connection_interpolation,
                                                                                           ", ".join(_supported))
-        self.assertIn(Nodzgraph.configuration.connection_display_type, _supported, msg=msg)
+        self.assertIn(Nodzgraph.configuration.connection_interpolation, _supported, msg=msg)
 
 
 class NodegraphCase(TestCase):

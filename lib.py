@@ -522,6 +522,14 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         raise NotImplementedError
 
 
+class DotItem(Qt.QtWidgets.QGraphicsEllipseItem):
+
+    def __init__(self, *args, **kwargs):
+        super(DotItem, self).__init(*args, **kwargs)
+
+
+
+
 class Menu(Qt.QtWidgets.QMenu):
     """ the main CocoNodz menu we will provide for each application integration
 
