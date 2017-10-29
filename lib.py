@@ -772,6 +772,9 @@ def set_application_palette(palette_filepath, application):
                 group_group = getattr(Qt.QtGui.QPalette, group)
                 group_role = getattr(Qt.QtGui.QPalette, role)
                 palette.setColor(group_group, group_role, group_color)
+        # we have to set the style to plastic otherwise
+        # the palette will not applied to QMenus propery
+        application.setStyle("plastique")
         application.setPalette(palette)
     else:
         LOG.info("Not running standalone. Inherit application palette")
