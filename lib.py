@@ -515,19 +515,275 @@ class RenameField(ContextWidget):
 
 
 class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
+    """ Rectangle Item that visually groups nodes insides its bounds
 
-    def __init__(self, *args, **kwargs):
-        super(BackdropItem, self).__init(*args, **kwargs)
+    """
 
+    def __init__(self, name, bounds=(0, 0, 200, 200), color=(255, 0, 0, 50), border_color=(255, 255, 255, 50), description=""):
+        """
+
+        Args:
+            name: name of the backdrop that will be displayed as title
+            bounds: tuple including x,y of the topleft corner width and height
+            color: tuple including RGBA as integers from 0-255
+            border_color: tuple including RGBA as integers from 0-255
+        """
+        super(BackdropItem, self).__init__(*bounds)
+
+        self.name = name
+        self.title_height = 20
+        self.title_font_size = 12
+        self.description_font_size = 10
+        self._handle_size = 20
+        self._minimum_size = 40
+        self._resize_space = 50
+
+        self._handle_in_use = False
+
+        self.setAcceptHoverEvents(True)
+        self.setFlag(Qt.QtWidgets.QGraphicsItem.ItemIsMovable)
+        self.setFlag(Qt.QtWidgets.QGraphicsItem.ItemIsSelectable)
+        self.setFlag(Qt.QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
+        self.setFlag(Qt.QtWidgets.QGraphicsItem.ItemIsFocusable, True)
+
+        self._bg_color = Qt.QtGui.QColor(*color)
+        self._border_color = Qt.QtGui.QColor(*border_color)
+        self._bounds = list(bounds)
+
+        self._bg_brush = Qt.QtGui.QBrush(self._bg_color, Qt.QtCore.Qt.SolidPattern)
+        self._bg_pen = Qt.QtGui.QPen(Qt.QtCore.Qt.SolidLine)
+        self._bg_pen.setWidth(1)
+        self._bg_pen.setColor(self._border_color)
+
+        self._handle_brush = Qt.QtGui.QBrush(self._bg_color, Qt.QtCore.Qt.BDiagPattern)
+        # todo switch font size and type to config
+        self._title_font = Qt.QtGui.QFont("Arial", self.title_font_size)
+
+        self._preview_brush = Qt.QtGui.QBrush(Qt.QtCore.Qt.NoBrush)
+        self._preview_pen = Qt.QtGui.QPen(Qt.QtCore.Qt.DashLine)
+
+        self.background = None
+        self.title_bar = None
+        self.title = None
+        self.handle = None
+
+        self.setup_ui()
+
+        self.description_text = description
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        self._name = name
+
+    @property
+    def description_text(self):
+        return self._description_text
+
+    @description_text.setter
+    def description_text(self, text):
+
+        self._adjust_description(text)
+        self._description_text = text
+
+    @property
+    def title_height(self):
+        return self._title_height
+
+    @title_height.setter
+    def title_height(self, height):
+        assert isinstance(height, int)
+
+        self._title_height = height
+
+    @property
+    def title_font_size(self):
+        return self._title_font_size
+
+    @title_font_size.setter
+    def title_font_size(self, size):
+        assert isinstance(size, int)
+
+        self._title_font_size = size
+
+    @property
+    def description_font_size(self):
+        return self._description_font_size
+
+    @description_font_size.setter
+    def description_font_size(self, size):
+        assert isinstance(size, int)
+
+        self._description_font_size = size
+
+    def setup_ui(self):
+        """ creates the items and applies styles
+
+        Returns:
+
+        """
+        self.setBrush(self._bg_brush)
+        self.setPen(self._bg_pen)
+
+        self.title_bar = Qt.QtWidgets.QGraphicsRectItem(self.x(), self.y(), self._bounds[2], self.title_height, parent=self)
+        self.title_bar.setBrush(self._bg_brush)
+        self.title_bar.setPen(self._bg_pen)
+
+        self.title = Qt.QtWidgets.QGraphicsTextItem(self.name, parent=self.title_bar)
+        self.title.setFont(self._title_font)
+        self.title.setTextWidth(self._bounds[2])
+        self.title.setY(-5)
+
+        self.description = Qt.QtWidgets.QGraphicsTextItem(parent=self)
+        self.description.setFont(self._title_font)
+        self.description.setTextWidth(self._bounds[2])
+        self.description.setY(self.title_height)
+
+        self.handle = Qt.QtWidgets.QGraphicsRectItem(self.x() + self._bounds[2] - self._handle_size,
+                                                     self.y() + self._bounds[3] - self._handle_size,
+                                                     self._handle_size, self._handle_size,
+                                                     parent=self)
+        self.handle.setBrush(self._handle_brush)
+        self.handle.setPen(self._bg_pen)
+
+    def _adjust_description(self, text):
+        """ adjusts the description text
+
+        Handles the backdrop resizing if required
+        Args:
+            text: description text string
+
+        Returns:
+
+        """
+        self.description.setPlainText(text)
+
+        # resize backdrop when required
+        if self.description.boundingRect().height() >= self._bounds[3]:
+            self._perform_resize(Qt.QtCore.QPointF(self.description.boundingRect().width(),
+                                                   self.description.boundingRect().height() +
+                                                   self.title_height + self._resize_space + 1))
+
+    def _remove(self):
+        """ _remove() gets called via Nodz, so we have to implement it here
+
+        Returns:
+
+        """
+        scene = self.scene()
+        scene.removeItem(self)
+        scene.update()
+
+    def get_items_in_bounds(self):
         raise NotImplementedError
+
+    def underlying_handle(self, point):
+        """ checks if there is a handle under point
+
+        Args:
+            point: QPointF
+
+        Returns: QGraphicRectItem instance
+
+        """
+        if self.handle.contains(point):
+            return self.handle
+
+    def _perform_resize(self, width_height):
+        """ adjusts position, width and height of item and all child items
+
+        Args:
+            width_height: QPointF
+
+        Returns:
+
+        """
+
+        # and text sizes too
+        self.title.setTextWidth(self._bounds[2])
+        self.description.setTextWidth(self._bounds[2])
+
+        if (width_height.x() > self._minimum_size) and (width_height.y() > self.description.boundingRect().height() +
+            self.title_height + self._resize_space):
+            # x and y are always 0
+            # we only have to consider width and height
+            self._bounds[2] = width_height.x()
+            self._bounds[3] = width_height.y()
+
+            # set sizes
+            self.setRect(0, 0, self._bounds[2], self._bounds[3])
+            self.title_bar.setRect(0, 0, self._bounds[2], self.title_height)
+            self.handle.setRect(self._bounds[2] - self._handle_size,
+                                self._bounds[3] - self._handle_size,
+                                self._handle_size, self._handle_size)
+
+    def mousePressEvent(self, event):
+        """ initializes the backdrop resize procedure
+
+        Args:
+            event:
+
+        Returns:
+
+        """
+        selected_handle = self.underlying_handle(event.pos())
+        if selected_handle:
+            self._handle_in_use = True
+        super(BackdropItem, self).mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        """
+
+        Args:
+            event:
+
+        Returns:
+
+        """
+        # define status
+        self._handle_in_use = False
+
+        super(BackdropItem, self).mouseReleaseEvent(event)
+
+    def mouseMoveEvent(self, event):
+        """ move backdrop or perform resize
+
+        Args:
+            event:
+
+        Returns:
+
+        """
+        if self._handle_in_use:
+            self._perform_resize(event.pos())
+        else:
+            self.setCursor(Qt.QtCore.Qt.ArrowCursor)
+            super(BackdropItem, self).mouseMoveEvent(event)
+
+    def hoverMoveEvent(self, event):
+        """ if we hover over the handle change the cursor shape
+
+        Args:
+            event:
+
+        Returns:
+
+        """
+        handle = self.underlying_handle(event.pos())
+        if handle:
+            self.setCursor(Qt.QtCore.Qt.SizeFDiagCursor)
+        else:
+            self.setCursor(Qt.QtCore.Qt.ArrowCursor)
+        super(BackdropItem, self).hoverEnterEvent(event)
 
 
 class DotItem(Qt.QtWidgets.QGraphicsEllipseItem):
 
     def __init__(self, *args, **kwargs):
         super(DotItem, self).__init(*args, **kwargs)
-
-
 
 
 class Menu(Qt.QtWidgets.QMenu):
