@@ -10,6 +10,7 @@ from coconodz.lib import (BaseWindow,
                           SearchField,
                           RenameField,
                           AttributeContext,
+                          BackdropItem,
                           ConfiguationMixin)
 from coconodz.events import (Events,
                              SuppressEvents
@@ -28,6 +29,7 @@ class Basegraph(object):
         super(Basegraph, self).__init__()
 
         self._all_nodes = {}
+        self._all_backdrops = []
 
     # the current Nodz implementation stores the
     # node as tuple, which is not really clear to us
@@ -53,6 +55,22 @@ class Basegraph(object):
     def selected_node_names(self):
         return [_.name for _ in self.selected_nodes if _.isSelected()]
 
+    @property
+    def all_backdrops(self):
+        return self._all_backdrops
+
+    @property
+    def all_backdrop_names(self):
+        return [_.name for _ in self.all_backdrops]
+
+    @property
+    def selected_backdrops(self):
+        return [_ for _ in self.all_backdrops if _.isSelected()]
+
+    @property
+    def selected_backdrop_names(self):
+        return [_.name for _ in self.selected_backdrops]
+
     def get_node_by_name(self, node_name):
         if node_name in self.nodes_dict:
             return self.nodes_dict[node_name]
@@ -75,6 +93,9 @@ class Basegraph(object):
 
     def get_socket_by_name(self, socket_name):
         return self.get_slot_by_name(socket_name, "socket")
+
+    def create_backdrop(self):
+        raise NotImplementedError
 
     def on_creation_field_request(self):
         raise NotImplementedError
@@ -546,6 +567,23 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         self.signal_nodes_deleted.emit([_ for _ in self.scene().selectedItems() if isinstance(_, NodeItem)])
         super(Nodz, self)._deleteSelectedNodes()
 
+
+    def retrieve_creation_position(self):
+        """ retrieves the position where something should be created
+
+        Depending on the configuration we define where to place nodes/backdrops/dots etc
+        Returns: QPointF
+
+        """
+        if self.configuration.node_placement == "cursor":
+            position = Qt.QtCore.QPointF(self.mapToScene(self.mapFromGlobal(Qt.QtGui.QCursor.pos())))
+        elif self.configuration.node_placement == "creation_field":
+            position = Qt.QtCore.QPointF(self.mapToScene(self.mapFromGlobal(self.creation_field.pos())))
+        else:
+            position = None
+
+        return position
+
     def create_node(self, name, position=None, alternate=False, node_type="default"):
         """ wrapper around Nodz.createNode() to extend behavior
 
@@ -559,12 +597,8 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         """
         if not position:
-            if self.configuration.node_placement == "cursor":
-                position = Qt.QtCore.QPointF(self.mapToScene(self.mapFromGlobal(Qt.QtGui.QCursor.pos())))
-            elif self.configuration.node_placement == "creation_field":
-                position = Qt.QtCore.QPointF(self.mapToScene(self.mapFromGlobal(self.creation_field.pos())))
-            else:
-                position = None
+            position = self.retrieve_creation_position()
+
         _ = "node_{0}".format(node_type)
         if hasattr(self.configuration, _):
             # and create node with included preset
@@ -873,7 +907,7 @@ class Nodegraph(Basegraph):
         # set slots
         self.register_events()
 
-        self.creation_field.available_items = self.configuration.available_node_types
+        self.creation_field.available_items = self.configuration.available_node_types + ["backdrop"]
 
         self.graph.delete_node = self._delete_node
         self.graph.get_node_by_name = self.get_node_by_name
@@ -1441,6 +1475,26 @@ class Nodegraph(Basegraph):
         if self.selected_nodes:
             self.graph.layout_nodes(self.selected_node_names)
 
+    def create_backdrop(self, use_selection=False):
+        """ creates a backdrop
+
+        Args:
+            use_selection: if True it will adjust the backdrop bounds to embrace selected nodes
+
+        Returns: BackdropItem instance
+
+        """
+        text = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet."
+
+        if not use_selection:
+            pos = self.graph.retrieve_creation_position()
+            bounds = (pos.x(), pos.y(), 300, 300)
+            backdrop = BackdropItem("Backdrop", bounds=bounds, description=text)
+        else:
+            raise NotImplementedError
+        self.graph.scene().addItem(backdrop)
+        return backdrop
+
     def on_creation_field_request(self):
         """ should be called when a creation_field_request signal was emitted
 
@@ -1529,7 +1583,11 @@ class Nodegraph(Basegraph):
         Returns:
 
         """
-        self.graph.create_node(node_type, node_type=node_type)
+
+        if node_type == "backdrop":
+            self.create_backdrop()
+        else:
+            self.graph.create_node(node_type, node_type=node_type)
 
     def on_search_field_opened(self):
         """ should be called when a search_fields opened signal was emitted

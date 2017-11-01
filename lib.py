@@ -535,32 +535,37 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         self.title_font_size = 12
         self.description_font_size = 10
         self._handle_size = 20
-        self._minimum_size = 40
+        self._minimum_size = 100
         self._resize_space = 50
 
         self._handle_in_use = False
 
+        # flags
         self.setAcceptHoverEvents(True)
         self.setFlag(Qt.QtWidgets.QGraphicsItem.ItemIsMovable)
         self.setFlag(Qt.QtWidgets.QGraphicsItem.ItemIsSelectable)
-        self.setFlag(Qt.QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
         self.setFlag(Qt.QtWidgets.QGraphicsItem.ItemIsFocusable, True)
 
+        # style
         self._bg_color = Qt.QtGui.QColor(*color)
         self._border_color = Qt.QtGui.QColor(*border_color)
         self._bounds = list(bounds)
 
         self._bg_brush = Qt.QtGui.QBrush(self._bg_color, Qt.QtCore.Qt.SolidPattern)
         self._bg_pen = Qt.QtGui.QPen(Qt.QtCore.Qt.SolidLine)
+        self._bg_pen.setJoinStyle(Qt.QtCore.Qt.RoundJoin)
         self._bg_pen.setWidth(1)
         self._bg_pen.setColor(self._border_color)
+
+        self._bg_pen_selected = self._bg_pen
+        self._bg_pen_selected.setWidth(2)
 
         self._handle_brush = Qt.QtGui.QBrush(self._bg_color, Qt.QtCore.Qt.BDiagPattern)
         # todo switch font size and type to config
         self._title_font = Qt.QtGui.QFont("Arial", self.title_font_size)
+        self._title_font.setBold(True)
 
-        self._preview_brush = Qt.QtGui.QBrush(Qt.QtCore.Qt.NoBrush)
-        self._preview_pen = Qt.QtGui.QPen(Qt.QtCore.Qt.DashLine)
+        self._description_font = Qt.QtGui.QFont("Arial", self.description_font_size)
 
         self.background = None
         self.title_bar = None
@@ -628,23 +633,31 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         self.setBrush(self._bg_brush)
         self.setPen(self._bg_pen)
 
-        self.title_bar = Qt.QtWidgets.QGraphicsRectItem(self.x(), self.y(), self._bounds[2], self.title_height, parent=self)
+        self.title_bar = Qt.QtWidgets.QGraphicsRectItem(self._bounds[0],
+                                                        self._bounds[1],
+                                                        self._bounds[2],
+                                                        self.title_height,
+                                                        parent=self)
         self.title_bar.setBrush(self._bg_brush)
         self.title_bar.setPen(self._bg_pen)
 
         self.title = Qt.QtWidgets.QGraphicsTextItem(self.name, parent=self.title_bar)
         self.title.setFont(self._title_font)
         self.title.setTextWidth(self._bounds[2])
-        self.title.setY(-5)
+
+        self.title.setX(self._bounds[0])
+        self.title.setY(self._bounds[1] - 5)
 
         self.description = Qt.QtWidgets.QGraphicsTextItem(parent=self)
-        self.description.setFont(self._title_font)
+        self.description.setFont(self._description_font)
         self.description.setTextWidth(self._bounds[2])
-        self.description.setY(self.title_height)
+        self.description.setX(self._bounds[0])
+        self.description.setY(self._bounds[1] + self.title_height)
 
-        self.handle = Qt.QtWidgets.QGraphicsRectItem(self.x() + self._bounds[2] - self._handle_size,
-                                                     self.y() + self._bounds[3] - self._handle_size,
-                                                     self._handle_size, self._handle_size,
+        self.handle = Qt.QtWidgets.QGraphicsRectItem(self._bounds[0] + self._bounds[2] - self._handle_size,
+                                                     self._bounds[1] + self._bounds[3] - self._handle_size,
+                                                     self._handle_size,
+                                                     self._handle_size,
                                                      parent=self)
         self.handle.setBrush(self._handle_brush)
         self.handle.setPen(self._bg_pen)
@@ -661,11 +674,10 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         """
         self.description.setPlainText(text)
 
-        # resize backdrop when required
+        # resize backdrop if required
         if self.description.boundingRect().height() >= self._bounds[3]:
-            self._perform_resize(Qt.QtCore.QPointF(self.description.boundingRect().width(),
-                                                   self.description.boundingRect().height() +
-                                                   self.title_height + self._resize_space + 1))
+            self._bounds[3] = self.description.boundingRect().height() + self._resize_space
+            self.set_size(self._bounds[2], self._bounds[3])
 
     def _remove(self):
         """ _remove() gets called via Nodz, so we have to implement it here
@@ -693,7 +705,7 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
             return self.handle
 
     def _perform_resize(self, width_height):
-        """ adjusts position, width and height of item and all child items
+        """ backdrop resize
 
         Args:
             width_height: QPointF
@@ -701,24 +713,38 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         Returns:
 
         """
-
         # and text sizes too
         self.title.setTextWidth(self._bounds[2])
         self.description.setTextWidth(self._bounds[2])
 
-        if (width_height.x() > self._minimum_size) and (width_height.y() > self.description.boundingRect().height() +
-            self.title_height + self._resize_space):
+        if (width_height.x() > self._minimum_size) and \
+           (width_height.y() > self.description.boundingRect().height() + self.title_height + self._resize_space):
             # x and y are always 0
             # we only have to consider width and height
-            self._bounds[2] = width_height.x()
-            self._bounds[3] = width_height.y()
+            self._bounds[2] = width_height.x() - self._bounds[0]
+            self._bounds[3] = width_height.y() - self._bounds[1]
 
-            # set sizes
-            self.setRect(0, 0, self._bounds[2], self._bounds[3])
-            self.title_bar.setRect(0, 0, self._bounds[2], self.title_height)
-            self.handle.setRect(self._bounds[2] - self._handle_size,
-                                self._bounds[3] - self._handle_size,
-                                self._handle_size, self._handle_size)
+            self.set_size(self._bounds[2], self._bounds[3])
+
+    def set_size(self, width, height):
+        """ adjusts width and height of item and all child nodes
+
+        Args:
+            width:
+            height:
+
+        Returns:
+
+        """
+        self.setRect(self._bounds[0], self._bounds[1], width, height)
+        self.title_bar.setRect(self._bounds[0],
+                               self._bounds[1],
+                               width,
+                               self.title_height)
+        self.handle.setRect(self._bounds[0] + width - self._handle_size,
+                            self._bounds[1] + height - self._handle_size,
+                            self._handle_size,
+                            self._handle_size)
 
     def mousePressEvent(self, event):
         """ initializes the backdrop resize procedure
@@ -735,7 +761,7 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         super(BackdropItem, self).mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
-        """
+        """ end backdrop resize procedure
 
         Args:
             event:
