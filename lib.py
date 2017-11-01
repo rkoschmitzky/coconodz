@@ -531,12 +531,12 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         super(BackdropItem, self).__init__(*bounds)
 
         self.name = name
-        self.title_height = 20
         self.title_font_size = 12
         self.description_font_size = 10
         self._handle_size = 20
-        self._minimum_size = 100
-        self._resize_space = 50
+        self._minimum_width = 100
+        self._resize_space = 25
+        self._title_space = 5
 
         self._handle_in_use = False
 
@@ -595,16 +595,6 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         self._description_text = text
 
     @property
-    def title_height(self):
-        return self._title_height
-
-    @title_height.setter
-    def title_height(self, height):
-        assert isinstance(height, int)
-
-        self._title_height = height
-
-    @property
     def title_font_size(self):
         return self._title_font_size
 
@@ -624,6 +614,13 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
 
         self._description_font_size = size
 
+    @property
+    def minimum_height(self):
+        return self.description.boundingRect().height() +\
+               self.title.boundingRect().height() +\
+               self._title_space +\
+               self._resize_space
+
     def setup_ui(self):
         """ creates the items and applies styles
 
@@ -636,7 +633,7 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         self.title_bar = Qt.QtWidgets.QGraphicsRectItem(self._bounds[0],
                                                         self._bounds[1],
                                                         self._bounds[2],
-                                                        self.title_height,
+                                                        20,
                                                         parent=self)
         self.title_bar.setBrush(self._bg_brush)
         self.title_bar.setPen(self._bg_pen)
@@ -648,11 +645,16 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         self.title.setX(self._bounds[0])
         self.title.setY(self._bounds[1] - 5)
 
+        self.title_bar.setRect(self._bounds[0],
+                               self._bounds[1],
+                               self._bounds[2],
+                               self.title.boundingRect().height())
+
         self.description = Qt.QtWidgets.QGraphicsTextItem(parent=self)
         self.description.setFont(self._description_font)
         self.description.setTextWidth(self._bounds[2])
         self.description.setX(self._bounds[0])
-        self.description.setY(self._bounds[1] + self.title_height)
+        self.description.setY(self._bounds[1] + self.title.boundingRect().height() + self._title_space)
 
         self.handle = Qt.QtWidgets.QGraphicsRectItem(self._bounds[0] + self._bounds[2] - self._handle_size,
                                                      self._bounds[1] + self._bounds[3] - self._handle_size,
@@ -675,9 +677,8 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         self.description.setPlainText(text)
 
         # resize backdrop if required
-        if self.description.boundingRect().height() >= self._bounds[3]:
-            self._bounds[3] = self.description.boundingRect().height() + self._resize_space
-            self.set_size(self._bounds[2], self._bounds[3])
+        if self.minimum_height >= self._bounds[3]:
+            self.set_size(self._bounds[2], self.minimum_height)
 
     def _remove(self):
         """ _remove() gets called via Nodz, so we have to implement it here
@@ -692,7 +693,7 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
     def get_items_in_bounds(self):
         raise NotImplementedError
 
-    def underlying_handle(self, point):
+    def _underlying_handle(self, point):
         """ checks if there is a handle under point
 
         Args:
@@ -717,8 +718,8 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         self.title.setTextWidth(self._bounds[2])
         self.description.setTextWidth(self._bounds[2])
 
-        if (width_height.x() > self._minimum_size) and \
-           (width_height.y() > self.description.boundingRect().height() + self.title_height + self._resize_space):
+        if (width_height.x() > self._minimum_width) and \
+           (width_height.y() - self._bounds[1] > self.description.boundingRect().height() + self.title.boundingRect().height() + self._resize_space):
             # x and y are always 0
             # we only have to consider width and height
             self._bounds[2] = width_height.x() - self._bounds[0]
@@ -740,11 +741,15 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         self.title_bar.setRect(self._bounds[0],
                                self._bounds[1],
                                width,
-                               self.title_height)
+                               self.title.boundingRect().height())
         self.handle.setRect(self._bounds[0] + width - self._handle_size,
                             self._bounds[1] + height - self._handle_size,
                             self._handle_size,
                             self._handle_size)
+        self._bounds[2] = width
+        self._bounds[3] = height
+
+        self.description.setY(self._bounds[1] + self.title.boundingRect().height() + self._title_space)
 
     def mousePressEvent(self, event):
         """ initializes the backdrop resize procedure
@@ -755,7 +760,7 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         Returns:
 
         """
-        selected_handle = self.underlying_handle(event.pos())
+        selected_handle = self._underlying_handle(event.pos())
         if selected_handle:
             self._handle_in_use = True
         super(BackdropItem, self).mousePressEvent(event)
@@ -798,7 +803,7 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         Returns:
 
         """
-        handle = self.underlying_handle(event.pos())
+        handle = self._underlying_handle(event.pos())
         if handle:
             self.setCursor(Qt.QtCore.Qt.SizeFDiagCursor)
         else:
