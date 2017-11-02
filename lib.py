@@ -531,8 +531,8 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         super(BackdropItem, self).__init__(*bounds)
 
         self.name = name
-        self.title_font_size = 12
-        self.description_font_size = 10
+        self._title_font_size = 12
+        self._description_font_size = 10
         self._handle_size = 20
         self._minimum_width = 100
         self._resize_space = 25
@@ -603,6 +603,9 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         assert isinstance(size, int)
 
         self._title_font_size = size
+        self._title_font.setPointSize(size)
+        self.title.setFont(self._title_font)
+        self.adjust_to_minimum_height()
 
     @property
     def description_font_size(self):
@@ -613,6 +616,9 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         assert isinstance(size, int)
 
         self._description_font_size = size
+        self._description_font.setPointSize(size)
+        self.description.setFont(self._description_font)
+        self._adjust_description(self.description_text)
 
     @property
     def minimum_height(self):
@@ -633,7 +639,7 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         self.title_bar = Qt.QtWidgets.QGraphicsRectItem(self._bounds[0],
                                                         self._bounds[1],
                                                         self._bounds[2],
-                                                        20,
+                                                        20,  # initial start value, will be overwritten later
                                                         parent=self)
         self.title_bar.setBrush(self._bg_brush)
         self.title_bar.setPen(self._bg_pen)
@@ -678,7 +684,7 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
 
         # resize backdrop if required
         if self.minimum_height >= self._bounds[3]:
-            self.set_size(self._bounds[2], self.minimum_height)
+            self.adjust_to_minimum_height()
 
     def _remove(self):
         """ _remove() gets called via Nodz, so we have to implement it here
@@ -750,6 +756,15 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         self._bounds[3] = height
 
         self.description.setY(self._bounds[1] + self.title.boundingRect().height() + self._title_space)
+
+    def adjust_to_minimum_height(self):
+        """ calculates minimum height and adjust height of the item
+
+        This has to be called if the description text, title and their sizes will be changed
+        Returns:
+
+        """
+        self.set_size(self._bounds[2], self.minimum_height)
 
     def mousePressEvent(self, event):
         """ initializes the backdrop resize procedure
