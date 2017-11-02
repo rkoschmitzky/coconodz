@@ -1475,7 +1475,7 @@ class Nodegraph(Basegraph):
         if self.selected_nodes:
             self.graph.layout_nodes(self.selected_node_names)
 
-    def create_backdrop(self, use_selection=False):
+    def create_backdrop(self, use_selection=True):
         """ creates a backdrop
 
         Args:
@@ -1484,14 +1484,19 @@ class Nodegraph(Basegraph):
         Returns: BackdropItem instance
 
         """
-        text = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet."
-
-        if not use_selection:
+        if not use_selection or not self.selected_nodes:
             pos = self.graph.retrieve_creation_position()
             bounds = (pos.x(), pos.y(), 300, 300)
-            backdrop = BackdropItem("Backdrop", bounds=bounds, description=text)
+            backdrop = BackdropItem("Backdrop", bounds=bounds)
         else:
-            raise NotImplementedError
+            bounds = self.graph._getSelectionBoundingbox()
+            backdrop = BackdropItem("Backdrop",
+                                    bounds=(bounds.x() - 50,
+                                            bounds.y() - 100,
+                                            bounds.width() + 100,
+                                            bounds.height() + 200
+                                            )
+                                    )
         self.graph.scene().addItem(backdrop)
         return backdrop
 
