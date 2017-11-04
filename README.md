@@ -19,7 +19,7 @@ A unified and configurable Nodegraph wrapper for Visual Effects Applications
 CocoNodz aims to provide a simple framework to integrate a unified and flexible Nodegraph into applications that supports Python and PyQt/PySide.
 Main Goals:
 
-- use a single nodegraph between different applications, OSX, linux, Windows
+- use a single nodegraph between different applications and plattforms on OSX, linux, Windows
 - customize and extend it where native applications nodegraph are lacking functionality or limiting customizability
 - provide a simple system for users to extend it with custom code snippets
 - load and share shading networks
@@ -122,6 +122,18 @@ specific values.
 
 <br>
 
+
+### reserved node types
+
+#### backdrop
+
+CocoNodz is supporting backdrop nodes to help grouping nodes, similar to backdrops in The Foundry's Nuke.
+
+#### dot
+
+Dot nodes are planned...
+
+<br>
 
 ## Integrations
 CocoNodz offers integrations for the following Applications

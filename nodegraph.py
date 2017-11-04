@@ -402,6 +402,9 @@ class ConnectionItem(nodz_main.ConnectionItem):
     def __init__(self, source_point, target_point, source, target, mode):
         super(ConnectionItem, self).__init__(source_point, target_point, source, target)
         self._mode = mode
+        self.setAcceptHoverEvents(True)
+        self.setFlag(Qt.QtWidgets.QGraphicsItem.ItemIsMovable)
+        self.setFlag(Qt.QtWidgets.QGraphicsItem.ItemIsSelectable)
 
     def updatePath(self):
         """ overrides the original method

@@ -537,6 +537,7 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         self._minimum_width = 100
         self._resize_space = 25
         self._title_space = 5
+        self._selection = []
 
         self._handle_in_use = False
 
@@ -686,6 +687,40 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         if self.minimum_height >= self._bounds[3]:
             self.adjust_to_minimum_height()
 
+    def get_contained_items(self):
+        """ get all node taht
+
+        Returns:
+
+        """
+        return self.scene().items(self.mapToScene(self.boundingRect()), mode=Qt.QtCore.Qt.IntersectsItemShape)
+
+    def select_contained_items(self):
+        """ we have to patch this later in the nodegraph class
+
+        Returns:
+
+        """
+        items = self.get_contained_items()
+        for item in items:
+            item.setSelected(True)
+
+    def _revert_selection(self):
+        """ restores previous stored selection
+
+        Returns:
+
+        """
+        for item in self.scene().items():
+            item.setSelected(False)
+        if self._selection:
+            for node in self._selection:
+                node.setSelected(True)
+            self._selection = None
+
+    def _store_selection(self):
+        self._selection = [item for item in self.scene().items() if item.isSelected()]
+
     def _remove(self):
         """ _remove() gets called via Nodz, so we have to implement it here
 
@@ -778,6 +813,9 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         selected_handle = self._underlying_handle(event.pos())
         if selected_handle:
             self._handle_in_use = True
+        else:
+            self._store_selection()
+            self.select_contained_items()
         super(BackdropItem, self).mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
@@ -791,7 +829,7 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         """
         # define status
         self._handle_in_use = False
-
+        self._revert_selection()
         super(BackdropItem, self).mouseReleaseEvent(event)
 
     def mouseMoveEvent(self, event):
@@ -808,6 +846,8 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         else:
             self.setCursor(Qt.QtCore.Qt.ArrowCursor)
             super(BackdropItem, self).mouseMoveEvent(event)
+
+        self.scene().updateScene()
 
     def hoverMoveEvent(self, event):
         """ if we hover over the handle change the cursor shape
