@@ -42,7 +42,6 @@ Main Goals:
 | Default Shortcut | Description
 |:-----------------|:------------
 | RMB              | opens the context-aware graph widget
-| Ctrl + RMB       | opens the context-aware attribute tree widget, when executed over node
 | Alt + RMB        | zooms in and out the nodegraph canvas
 | Tab              | opens the node creation widget
 | F                | focus selected nodes

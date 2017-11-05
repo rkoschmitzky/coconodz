@@ -319,8 +319,7 @@ class NodeItem(nodz_main.NodeItem):
         Returns:
 
         """
-        if (event.button() == Qt.QtCore.Qt.RightButton and
-            event.modifiers() == Qt.QtCore.Qt.ControlModifier):
+        if event.button() == Qt.QtCore.Qt.RightButton:
             self.signal_context_request.emit(self)
         else:
             super(NodeItem, self).mousePressEvent(event)
@@ -512,7 +511,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         return self._attribute_context
 
     def keyPressEvent(self, event):
-        """ overrides the mousePressEvent
+        """ overrides the keyPressEvent
 
         We are adding more key press events here
         Args:
@@ -543,6 +542,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         # Emit signal.
         self.signal_KeyPressed.emit(event.key())
+        super(Nodz, self).keyPressEvent(event)
 
     def mousePressEvent(self, event):
         """ extends the mousePressEvent
@@ -554,10 +554,10 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         Returns:
 
         """
-        if (event.button() == Qt.QtCore.Qt.RightButton and
-            event.modifiers() == Qt.QtCore.Qt.NoModifier):
-            self.signal_context_request.emit(self)
-
+        if not self.scene().itemAt(self.mapToScene(event.pos())):
+            if (event.button() == Qt.QtCore.Qt.RightButton and
+                        event.modifiers() == Qt.QtCore.Qt.NoModifier):
+                self.signal_context_request.emit(self.scene().itemAt(self.mapToScene(event.pos())))
         super(Nodz, self).mousePressEvent(event)
 
     def _deleteSelectedNodes(self):
@@ -1566,8 +1566,9 @@ class Nodegraph(Basegraph):
         Returns:
 
         """
+        print widget
         _to_open = None
-        if isinstance(widget, Nodz):
+        if not widget:
             _to_open = self.graph.context
         elif isinstance(widget, NodeItem):
             self.attribute_context.setProperty("node_name", widget.name)
