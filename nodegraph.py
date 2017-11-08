@@ -1508,7 +1508,11 @@ class Nodegraph(Basegraph):
         else:
             selection_bounds = self.graph._getSelectionBoundingbox()
             backdrop = BackdropItem("Backdrop",
-                                    bounds=selection_bounds,
+                                    bounds=(selection_bounds.x() - 50,
+                                            selection_bounds.y() - 100,
+                                            selection_bounds.width() + 100,
+                                            selection_bounds.height() + 200,
+                                            ),
                                     color=color,
                                     border_color=border_color,
                                     font=font,

@@ -540,6 +540,7 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         self._title_font_size = kwargs.setdefault("title_font_size", 12)
         self._description_font_size = kwargs.setdefault("description_font_size", 12)
 
+        # use bounds as tuple or list
         self.setRect(*self._bounds)
         self._bounds = list(self._bounds)
 
@@ -808,6 +809,11 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
 
         """
         self.set_size(self._bounds[2], self.minimum_height)
+
+    def mouseDoubleClickEvent(self, event):
+
+        if event.button() == Qt.QtCore.Qt.LeftButton:
+            self.setSelected(True)
 
     def mousePressEvent(self, event):
         """ initializes the backdrop resize procedure
