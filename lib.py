@@ -519,7 +519,7 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
 
     """
 
-    def __init__(self, name, bounds=(0, 0, 200, 200), color=(255, 0, 0, 50), border_color=(255, 255, 255, 50), description=""):
+    def __init__(self, name, **kwargs):
         """
 
         Args:
@@ -528,11 +528,21 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
             color: tuple including RGBA as integers from 0-255
             border_color: tuple including RGBA as integers from 0-255
         """
-        super(BackdropItem, self).__init__(*bounds)
+        super(BackdropItem, self).__init__()
 
         self.name = name
-        self._title_font_size = 12
-        self._description_font_size = 10
+
+        self._bounds = kwargs.setdefault("bounds", (0, 0, 300, 300))
+        self._color = kwargs.setdefault("color", (255, 0, 0, 50))
+        self._font = kwargs.setdefault("font", "Arial")
+        self._border_color = kwargs.setdefault("border_color", (255, 255, 255, 50))
+        self._description_text = kwargs.setdefault("description", "")
+        self._title_font_size = kwargs.setdefault("title_font_size", 12)
+        self._description_font_size = kwargs.setdefault("description_font_size", 12)
+
+        self.setRect(*self._bounds)
+        self._bounds = list(self._bounds)
+
         self._handle_size = 20
         self._minimum_width = 100
         self._resize_space = 25
@@ -548,9 +558,8 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         self.setFlag(Qt.QtWidgets.QGraphicsItem.ItemIsFocusable, True)
 
         # style
-        self._bg_color = Qt.QtGui.QColor(*color)
-        self._border_color = Qt.QtGui.QColor(*border_color)
-        self._bounds = list(bounds)
+        self._bg_color = Qt.QtGui.QColor(*self._color)
+        self._border_color = Qt.QtGui.QColor(*self._border_color)
 
         self._bg_brush = Qt.QtGui.QBrush(self._bg_color, Qt.QtCore.Qt.SolidPattern)
         self._bg_pen = Qt.QtGui.QPen(Qt.QtCore.Qt.SolidLine)
@@ -562,11 +571,10 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         self._bg_pen_selected.setWidth(2)
 
         self._handle_brush = Qt.QtGui.QBrush(self._bg_color, Qt.QtCore.Qt.BDiagPattern)
-        # todo switch font size and type to config
-        self._title_font = Qt.QtGui.QFont("Arial", self.title_font_size)
+        self._title_font = Qt.QtGui.QFont(self._font, self.title_font_size)
         self._title_font.setBold(True)
 
-        self._description_font = Qt.QtGui.QFont("Arial", self.description_font_size)
+        self._description_font = Qt.QtGui.QFont(self._font, self.description_font_size)
 
         self.background = None
         self.title_bar = None
@@ -575,7 +583,7 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
 
         self.setup_ui()
 
-        self.description_text = description
+        self.description_text = self._description_text
 
     @property
     def name(self):

@@ -75,6 +75,12 @@ class ConfigurationCase(TestCase):
         self.assertHasAttribute(Nodzgraph.configuration, "datatype_default")
         self.assertHasAttribute(Nodzgraph.configuration, "layout_margin_size")
         self.assertHasAttribute(Nodzgraph.configuration, "node_placement")
+        self.assertHasAttribute(Nodzgraph.configuration, "backdrop_color")
+        self.assertHasAttribute(Nodzgraph.configuration, "backdrop_border_color")
+        self.assertHasAttribute(Nodzgraph.configuration, "backdrop_bounds")
+        self.assertHasAttribute(Nodzgraph.configuration, "backdrop_title_font_size")
+        self.assertHasAttribute(Nodzgraph.configuration, "backdrop_description_font_size")
+        self.assertHasAttribute(Nodzgraph.configuration, "backdrop_font")
 
     def test_load_configuration(self):
         old_width = Nodzgraph.configuration.scene_width

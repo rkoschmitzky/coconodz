@@ -1487,18 +1487,33 @@ class Nodegraph(Basegraph):
         Returns: BackdropItem instance
 
         """
+        bounds = self.configuration.backdrop_bounds
+        color = self.configuration.backdrop_color
+        border_color = self.configuration.backdrop_border_color
+        font = self.configuration.backdrop_font
+        title_font_size = self.configuration.backdrop_title_font_size
+        description_font_size = self.configuration.backdrop_description_font_size
+
         if not use_selection or not self.selected_nodes:
             pos = self.graph.retrieve_creation_position()
-            bounds = (pos.x(), pos.y(), 300, 300)
-            backdrop = BackdropItem("Backdrop", bounds=bounds)
-        else:
-            bounds = self.graph._getSelectionBoundingbox()
+            bounds = (pos.x(), pos.y(), bounds[2], bounds[3])
             backdrop = BackdropItem("Backdrop",
-                                    bounds=(bounds.x() - 50,
-                                            bounds.y() - 100,
-                                            bounds.width() + 100,
-                                            bounds.height() + 200
-                                            )
+                                    bounds=bounds,
+                                    color=color,
+                                    border_color=border_color,
+                                    font=font,
+                                    title_font_size=title_font_size,
+                                    descriptipn_font_size=description_font_size
+                                    )
+        else:
+            selection_bounds = self.graph._getSelectionBoundingbox()
+            backdrop = BackdropItem("Backdrop",
+                                    bounds=selection_bounds,
+                                    color=color,
+                                    border_color=border_color,
+                                    font=font,
+                                    title_font_size=title_font_size,
+                                    descriptipn_font_size=description_font_size
                                     )
         self.graph.scene().addItem(backdrop)
         return backdrop
