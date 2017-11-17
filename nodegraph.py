@@ -7,10 +7,11 @@ import nodz_utils
 
 from coconodz.lib import (BaseWindow,
                           GraphContext,
+                          BackdropContext,
                           SearchField,
                           RenameField,
                           AttributeContext,
-                          BackdropItem,
+                          Backdrop,
                           ConfiguationMixin)
 from coconodz.events import (Events,
                              SuppressEvents
@@ -230,10 +231,11 @@ class Basegraph(object):
         raise NotImplementedError
 
 
-class NodeItem(nodz_main.NodeItem):
-    """ extends the nodz_main.NodeItem class
+class ItemSignals(Qt.QtCore.QObject):
+    """ signals we provide for all items
 
-    Original implementation customization
+    Unfortunately we are not able to provide custom
+    signals when subclassing QGraphicsItems.
     """
 
     signal_context_request = Qt.QtCore.Signal(object)
@@ -241,6 +243,50 @@ class NodeItem(nodz_main.NodeItem):
     signal_socket_created = Qt.QtCore.Signal(object)
     signal_plug_created = Qt.QtCore.Signal(object)
     signal_name_changed = Qt.QtCore.Signal(object)
+
+    def __init__(self):
+        Qt.QtCore.QObject.__init__(self)
+
+
+class BackdropItem(Backdrop):
+    """ extends the Backdrop class
+
+    """
+
+    signals = ItemSignals()
+    signal_context_request = signals.signal_context_request
+
+    def __init__(self, *args, **kwargs):
+        super(BackdropItem, self).__init__(*args, **kwargs)
+
+    def mousePressEvent(self, event):
+        """ extend the mousePressEvent
+
+        We are adding a context widget request on RMB click here
+        Args:
+            event:
+
+        Returns:
+
+        """
+        if event.button() == Qt.QtCore.Qt.RightButton:
+            self.signal_context_request.emit(self)
+        else:
+            super(BackdropItem, self).mousePressEvent(event)
+
+
+class NodeItem(nodz_main.NodeItem):
+    """ extends the nodz_main.NodeItem class
+
+    Original implementation customization
+    """
+
+    signals = ItemSignals()
+    signal_context_request = signals.signal_context_request
+    signal_attr_created = signals.signal_attr_created
+    signal_socket_created = signals.signal_socket_created
+    signal_plug_created = signals.signal_plug_created
+    signal_name_changed = signals.signal_name_changed
 
     def __init__(self, name, alternate, preset, config):
         super(NodeItem, self).__init__(name, alternate, preset, config)
@@ -466,6 +512,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         self._creation_field = SearchField(self)
         self._context = GraphContext(self)
         self._attribute_context = AttributeContext(self)
+        self._backdrop_context = BackdropContext(self)
 
     @property
     def rename_field(self):
@@ -509,6 +556,16 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         """
 
         return self._attribute_context
+
+    @property
+    def backdrop_context(self):
+        """ holds the backdrop context widget
+
+        Returns: AttributeContext instance
+
+        """
+
+        return self._backdrop_context
 
     def keyPressEvent(self, event):
         """ overrides the keyPressEvent
@@ -1011,6 +1068,11 @@ class Nodegraph(Basegraph):
         """
         return self.graph.attribute_context
 
+    @property
+    def backdrop_context(self):
+        """holds the backdrop context widget"""
+        return self.graph.backdrop_context
+
     def open(self, *args, **kwargs):
         """ opens the Nodegraph
 
@@ -1498,27 +1560,29 @@ class Nodegraph(Basegraph):
             pos = self.graph.retrieve_creation_position()
             bounds = (pos.x(), pos.y(), bounds[2], bounds[3])
             backdrop = BackdropItem("Backdrop",
-                                    bounds=bounds,
-                                    color=color,
-                                    border_color=border_color,
-                                    font=font,
-                                    title_font_size=title_font_size,
-                                    descriptipn_font_size=description_font_size
-                                    )
+                                bounds=bounds,
+                                color=color,
+                                border_color=border_color,
+                                font=font,
+                                title_font_size=title_font_size,
+                                descriptipn_font_size=description_font_size
+                                )
         else:
             selection_bounds = self.graph._getSelectionBoundingbox()
             backdrop = BackdropItem("Backdrop",
-                                    bounds=(selection_bounds.x() - 50,
+                                bounds=(selection_bounds.x() - 50,
                                             selection_bounds.y() - 100,
                                             selection_bounds.width() + 100,
                                             selection_bounds.height() + 200,
                                             ),
-                                    color=color,
-                                    border_color=border_color,
-                                    font=font,
-                                    title_font_size=title_font_size,
-                                    descriptipn_font_size=description_font_size
-                                    )
+                                color=color,
+                                border_color=border_color,
+                                font=font,
+                                title_font_size=title_font_size,
+                                descriptipn_font_size=description_font_size
+                                )
+
+        backdrop.signal_context_request.connect(self.on_context_request)
         self.graph.scene().addItem(backdrop)
         return backdrop
 
@@ -1585,13 +1649,16 @@ class Nodegraph(Basegraph):
         Returns:
 
         """
-        print widget
+
         _to_open = None
         if not widget:
             _to_open = self.graph.context
         elif isinstance(widget, NodeItem):
             self.attribute_context.setProperty("node_name", widget.name)
             _to_open = self.attribute_context
+        elif isinstance(widget, BackdropItem):
+            _to_open = self.graph.backdrop_context
+            self.graph.backdrop_context.backdrop_item = widget
         else:
             pass
 

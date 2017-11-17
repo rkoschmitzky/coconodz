@@ -1,3 +1,4 @@
+from functools import partial
 import json
 import logging
 import os
@@ -110,6 +111,8 @@ class ContextWidget(Qt.QtWidgets.QMenu):
         self._context = None
         self._expect_msg = "Expected type {0}, got {1} instead"
 
+        self.initial_pos = None
+
     @property
     def available_items(self):
         """ available items dictionary
@@ -168,14 +171,23 @@ class ContextWidget(Qt.QtWidgets.QMenu):
         """
         self.signal_available_items_changed.connect(self.on_available_items_changed)
 
-    def open(self):
+    def open(self, at_initial=False):
         """ opens widget on cursor position
 
         Returns:
 
         """
+
         self.signal_opened.emit()
-        pos = Qt.QtGui.QCursor.pos()
+
+        if not at_initial:
+            pos = Qt.QtGui.QCursor.pos()
+            self.initial_pos = pos
+        else:
+            pos = self.initial_pos
+
+        assert isinstance(pos, Qt.QtCore.QPoint)
+
         self.move(pos.x(), pos.y())
         self.exec_()
 
@@ -219,6 +231,138 @@ class GraphContext(ContextWidget):
 
         """
         self.setup_ui()
+
+
+class BackdropContext(ContextWidget):
+
+    def __init__(self, parent):
+        super(BackdropContext, self).__init__(parent)
+
+        self._color_dialog = Qt.QtWidgets.QColorDialog()
+        self._color_dialog.setOptions(Qt.QtWidgets.QColorDialog.ShowAlphaChannel)
+        self._color_dialog.finished.connect(self.open)
+        self._color_dialog.currentColorChanged.connect(self.on_color_changed)
+        self._desctiption_text = ""
+        self._description_font_size = 10
+        self._color = None
+        self._border_color = None
+        self._backdrop_item = None
+        self.setup_ui()
+
+    @property
+    def backdrop_item(self):
+        return self._backdrop_item
+
+    @backdrop_item.setter
+    def backdrop_item(self, backdrop_item):
+
+        assert isinstance(backdrop_item, Backdrop), \
+            "Expected '{}' instance as backdrop item got '{}'".format(type(Backdrop), type(backdrop_item))
+
+        self._backdrop_item = backdrop_item
+
+    def _set_button_color(self, button, color):
+        button.setStyleSheet("QToolButton {background-color: rgba(%s, %s, %s, %s);}" % (color[0],
+                                                                                        color[1],
+                                                                                        color[2],
+                                                                                        color[3]))
+        button.setProperty("color", color)
+
+    def _open_color_dialog(self, button):
+        color = button.property("color")
+        self._color_dialog.setCurrentColor(Qt.QtGui.QColor(*color))
+        self._color_dialog.setProperty("color_type", button.property("color_type"))
+        self._color_dialog.show()
+
+    def setup_ui(self):
+
+        widget = Qt.QtWidgets.QWidget(self)
+        layout = Qt.QtWidgets.QVBoxLayout(widget)
+
+        group = Qt.QtWidgets.QGroupBox("Edit Backdrop")
+        group_layout = Qt.QtWidgets.QVBoxLayout()
+        group.setLayout(group_layout)
+        layout.addWidget(group)
+
+        description_group = Qt.QtWidgets.QGroupBox("Description")
+        description_layout = Qt.QtWidgets.QHBoxLayout()
+        description_group.setLayout(description_layout)
+
+        description_field = Qt.QtWidgets.QTextEdit("test text")
+        description_layout.addWidget(description_field)
+
+        group_layout.addWidget(description_group)
+
+        appearance_group = Qt.QtWidgets.QGroupBox("Appearance")
+        appearance_layout = Qt.QtWidgets.QGridLayout()
+        appearance_group.setLayout(appearance_layout)
+
+        group_layout.addWidget(appearance_group)
+
+        title_font_label = Qt.QtWidgets.QLabel("Title font size:")
+        appearance_layout.addWidget(title_font_label, 0, 0)
+
+        title_fonz_size = Qt.QtWidgets.QSpinBox()
+        appearance_layout.addWidget(title_fonz_size, 0, 1)
+
+        description_font_label = Qt.QtWidgets.QLabel("Description fonz size:")
+        appearance_layout.addWidget(description_font_label, 1, 0)
+
+        description_font_size = Qt.QtWidgets.QSpinBox()
+        appearance_layout.addWidget(description_font_size, 1, 1)
+
+        backdrop_color_label = Qt.QtWidgets.QLabel("Color:")
+        appearance_layout.addWidget(backdrop_color_label, 2, 0)
+
+        backdrop_color = Qt.QtWidgets.QToolButton()
+        backdrop_color.setProperty("color_type", "color")
+        appearance_layout.addWidget(backdrop_color, 2, 1)
+
+        backdrop_border_color_label = Qt.QtWidgets.QLabel("Border color:")
+        appearance_layout.addWidget(backdrop_border_color_label, 3, 0)
+
+        backdrop_border_color = Qt.QtWidgets.QToolButton()
+        backdrop_border_color.setProperty("color_type", "border_color")
+        appearance_layout.addWidget(backdrop_border_color, 3, 1)
+
+        self.context = widget
+
+        # adjust content
+        if self.backdrop_item:
+            self._set_button_color(backdrop_color, self.backdrop_item.color)
+            self._set_button_color(backdrop_border_color, self.backdrop_item.border_color)
+            description_field.setPlainText(self.backdrop_item.description_text)
+            description_font_size.setValue(self.backdrop_item.description_font_size)
+            title_fonz_size.setValue(self.backdrop_item.title_font_size)
+            backdrop_color.clicked.connect(partial(self._open_color_dialog, backdrop_color))
+            backdrop_border_color.clicked.connect(partial(self._open_color_dialog, backdrop_border_color))
+
+        # connect signals
+        description_field.textChanged.connect(partial(self.on_description_text_changed,
+                                                      description_field)
+                                              )
+        description_font_size.valueChanged.connect(self.on_description_font_size_changed)
+        title_fonz_size.valueChanged.connect(self.on_title_font_size_changed)
+
+    def on_description_text_changed(self, description_widget, *args):
+        self.backdrop_item.description_text = description_widget.toPlainText()
+
+    def on_color_changed(self, color):
+        if self.backdrop_item:
+            if self._color_dialog.property("color_type") == "color":
+                self.backdrop_item.color = color
+            elif self._color_dialog.property("color_type") == "border_color":
+                self.backdrop_item.border_color = color
+
+    def on_title_font_size_changed(self, value):
+        self.backdrop_item.title_font_size = value
+
+    def on_description_font_size_changed(self, value):
+        self.backdrop_item.description_font_size = value
+
+    def open(self, at_initial=False):
+        self.setup_ui()
+        super(BackdropContext, self).open(at_initial)
 
 
 class AttributeContext(ContextWidget):
@@ -514,7 +658,7 @@ class RenameField(ContextWidget):
         self.close()
 
 
-class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
+class Backdrop(Qt.QtWidgets.QGraphicsRectItem):
     """ Rectangle Item that visually groups nodes insides its bounds
 
     """
@@ -528,14 +672,14 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
             color: tuple including RGBA as integers from 0-255
             border_color: tuple including RGBA as integers from 0-255
         """
-        super(BackdropItem, self).__init__()
+        super(Backdrop, self).__init__()
 
         self.name = name
 
-        self._bounds = kwargs.setdefault("bounds", (0, 0, 300, 300))
-        self._color = kwargs.setdefault("color", (255, 0, 0, 50))
+        self._bounds = kwargs.setdefault("bounds", [0, 0, 300, 300])
+        self._color = kwargs.setdefault("color", [255, 0, 0, 50])
         self._font = kwargs.setdefault("font", "Arial")
-        self._border_color = kwargs.setdefault("border_color", (255, 255, 255, 50))
+        self._border_color = kwargs.setdefault("border_color", [255, 255, 255, 50])
         self._description_text = kwargs.setdefault("description", "")
         self._title_font_size = kwargs.setdefault("title_font_size", 12)
         self._description_font_size = kwargs.setdefault("description_font_size", 12)
@@ -560,13 +704,13 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
 
         # style
         self._bg_color = Qt.QtGui.QColor(*self._color)
-        self._border_color = Qt.QtGui.QColor(*self._border_color)
+        self._bg_border_color = Qt.QtGui.QColor(*self._border_color)
 
         self._bg_brush = Qt.QtGui.QBrush(self._bg_color, Qt.QtCore.Qt.SolidPattern)
         self._bg_pen = Qt.QtGui.QPen(Qt.QtCore.Qt.SolidLine)
         self._bg_pen.setJoinStyle(Qt.QtCore.Qt.RoundJoin)
         self._bg_pen.setWidth(1)
-        self._bg_pen.setColor(self._border_color)
+        self._bg_pen.setColor(self._bg_border_color)
 
         self._bg_pen_selected = self._bg_pen
         self._bg_pen_selected.setWidth(2)
@@ -629,6 +773,34 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         self._description_font.setPointSize(size)
         self.description.setFont(self._description_font)
         self._adjust_description(self.description_text)
+
+    @property
+    def color(self):
+        return self._color
+
+    @color.setter
+    def color(self, color):
+        assert isinstance(color, Qt.QtGui.QColor)
+
+        self._bg_brush.setColor(color)
+        self._handle_brush.setColor(color)
+        self.setBrush(self._bg_brush)
+        self.title_bar.setBrush(self._bg_brush)
+        self._color = [color.red(), color.green(), color.blue(), color.alpha()]
+
+    @property
+    def border_color(self):
+        return self._border_color
+
+    @border_color.setter
+    def border_color(self, color):
+        assert isinstance(color, Qt.QtGui.QColor)
+
+        self._bg_pen.setColor(color)
+        self.setPen(self._bg_pen)
+        self.handle.setPen(self._bg_pen)
+        self.title_bar.setPen(self._bg_pen)
+        self._border_color = [color.red(), color.green(), color.blue(), color.alpha()]
 
     @property
     def minimum_height(self):
@@ -824,13 +996,14 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         Returns:
 
         """
-        selected_handle = self._underlying_handle(event.pos())
-        if selected_handle:
-            self._handle_in_use = True
-        else:
-            self._store_selection()
-            self.select_contained_items()
-        super(BackdropItem, self).mousePressEvent(event)
+        if event.button() == Qt.QtCore.Qt.LeftButton:
+            selected_handle = self._underlying_handle(event.pos())
+            if selected_handle:
+                self._handle_in_use = True
+            else:
+                self._store_selection()
+                self.select_contained_items()
+        super(Backdrop, self).mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
         """ end backdrop resize procedure
@@ -841,10 +1014,11 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
         Returns:
 
         """
-        # define status
-        self._handle_in_use = False
-        self._revert_selection()
-        super(BackdropItem, self).mouseReleaseEvent(event)
+        if event.button() == Qt.QtCore.Qt.LeftButton:
+            # define status
+            self._handle_in_use = False
+            self._revert_selection()
+        super(Backdrop, self).mouseReleaseEvent(event)
 
     def mouseMoveEvent(self, event):
         """ move backdrop or perform resize
@@ -859,7 +1033,7 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
             self._perform_resize(event.pos())
         else:
             self.setCursor(Qt.QtCore.Qt.ArrowCursor)
-            super(BackdropItem, self).mouseMoveEvent(event)
+            super(Backdrop, self).mouseMoveEvent(event)
 
         self.scene().updateScene()
 
@@ -877,7 +1051,7 @@ class BackdropItem(Qt.QtWidgets.QGraphicsRectItem):
             self.setCursor(Qt.QtCore.Qt.SizeFDiagCursor)
         else:
             self.setCursor(Qt.QtCore.Qt.ArrowCursor)
-        super(BackdropItem, self).hoverEnterEvent(event)
+        super(Backdrop, self).hoverEnterEvent(event)
 
 
 class DotItem(Qt.QtWidgets.QGraphicsEllipseItem):
