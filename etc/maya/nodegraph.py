@@ -78,6 +78,14 @@ class Nodzgraph(nodegraph.Nodegraph):
                                             },
                               remover=remove_template_custom_content
                               )
+        self.events.add_event("host_node_created",
+                              adder=callbacks.add_node_created_callback,
+                              adder_args=(self.on_host_node_created, )
+                              )
+        self.events.attach_remover("host_node_created",
+                                   callable=callbacks.remove_callbacks_only,
+                                   callable_args=(self.events.data["host_node_created"]["id_list"], )
+                                   )
         self.events.add_event("host_node_name_changed",
                               adder=callbacks.add_node_name_changed_callback,
                               adder_args=(self.on_host_node_name_changed,)
@@ -157,10 +165,6 @@ class Nodzgraph(nodegraph.Nodegraph):
                                 attributes_dict=nodes_attributes,
                                 connections_dict=node_connections)
 
-    def on_creation_input_accepted(self, node_type):
-        node = pmc.createNode(node_type)
-        self.on_host_node_created(node.name(), node_type=node_type)
-
     def on_context_request(self, widget):
         _widget = super(Nodzgraph, self).on_context_request(widget)
 
@@ -197,17 +201,6 @@ class Nodzgraph(nodegraph.Nodegraph):
     def on_after_scene_changes(self, *args):
         self.events.resume_paused_events()
 
-    def on_node_created(self, node):
-        """ slot extension
-
-        Args:
-            node:
-
-        Returns:
-
-        """
-        super(Nodzgraph, self).on_node_created(node)
-
     def on_host_node_created(self, node_name, node_type):
         """ slot extension
 
@@ -219,6 +212,12 @@ class Nodzgraph(nodegraph.Nodegraph):
 
         """
         super(Nodzgraph, self).on_host_node_created(node_name, node_type)
+
+    @SuppressEvents("host_node_created")
+    def on_node_created(self, node):
+        host_node = pmc.createNode(node.node_type)
+        self.graph.rename_node(node, host_node.name())
+        super(Nodzgraph, self).on_node_created(node)
 
     @SuppressEvents("host_node_name_changed")
     def on_node_name_changed(self, node, old_name, new_name):

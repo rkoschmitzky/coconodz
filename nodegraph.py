@@ -26,8 +26,6 @@ class Basegraph(object):
 
     """
 
-    RESERVED_NODE_TYPES = ["backdrop"]
-
     def __init__(self, *args, **kwargs):
         super(Basegraph, self).__init__()
 
@@ -629,7 +627,6 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         self.signal_nodes_deleted.emit([_ for _ in self.scene().selectedItems() if isinstance(_, NodeItem)])
         super(Nodz, self)._deleteSelectedNodes()
 
-
     def retrieve_creation_position(self):
         """ retrieves the position where something should be created
 
@@ -658,22 +655,25 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         Returns: NodeItem instance
 
         """
-        if not position:
-            position = self.retrieve_creation_position()
-
-        _ = "node_{0}".format(node_type)
-        if hasattr(self.configuration, _):
-            # and create node with included preset
-            node = self.createNode(name, _, position, alternate)
+        if node_type == "backdrop":
+            self.create_backdrop()
         else:
-            LOG.info("Node preset for type {0} not configured.".format(node_type))
-            node = self.createNode(name, position=position, alternate=alternate)
-        node.node_type = node_type
+            if not position:
+                position = self.retrieve_creation_position()
 
-        self.signal_node_created.emit(node)
-        return node
+            _ = "node_{0}".format(node_type)
+            if hasattr(self.configuration, _):
+                # and create node with included preset
+                node = self.createNode(name, _, position, alternate)
+            else:
+                LOG.info("Node preset for type {0} not configured.".format(node_type))
+                node = self.createNode(name, position=position, alternate=alternate)
+            node.node_type = node_type
 
-    def createNode(self, name="default", preset="node_default", position=None, alternate=True, node_type="default"):
+            self.signal_node_created.emit(node)
+            return node
+
+    def createNode(self, name="default", preset="node_default", position=None, alternate=True):
         """ overrides the createNode method
 
         Args:
@@ -724,6 +724,9 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         if old_name != new_name:
             self.editNode(node, new_name)
             self.signal_node_name_changed.emit(node, old_name, new_name)
+
+    def create_backdrop(self):
+        pass
 
     def apply_data_type_color_to_connection(self, connection):
         """ takes and applies the data type color to the connection
@@ -1304,6 +1307,7 @@ class Nodegraph(Basegraph):
         self.graph.on_context_request = self.on_context_request
         self.graph.on_plug_created = self.on_plug_created
         self.graph.on_socket_created = self.on_socket_created
+        self.graph.create_backdrop = self.create_backdrop
 
         # @todo use a event factory to remove boilerplate
         self.events.add_event("creation_field_request",
@@ -1680,11 +1684,7 @@ class Nodegraph(Basegraph):
         Returns:
 
         """
-
-        if node_type == "backdrop":
-            self.create_backdrop()
-        else:
-            self.graph.create_node(node_type, node_type=node_type)
+        self.graph.create_node(node_type, node_type=node_type)
 
     def on_search_field_opened(self):
         """ should be called when a search_fields opened signal was emitted
@@ -1738,8 +1738,7 @@ class Nodegraph(Basegraph):
 
         """
         self.nodes_dict[node.name] = node
-        if node and not node.node_type in self.RESERVED_NODE_TYPES:
-            self.graph.signal_after_node_created.emit(node)
+        self.graph.signal_after_node_created.emit(node)
 
     def on_after_node_created(self, node):
         # create default plug on node
