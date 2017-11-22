@@ -26,6 +26,8 @@ class Basegraph(object):
 
     """
 
+    RESERVED_NODE_TYPES = ["backdrop"]
+
     def __init__(self, *args, **kwargs):
         super(Basegraph, self).__init__()
 
@@ -611,10 +613,10 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         Returns:
 
         """
-        if not self.scene().itemAt(self.mapToScene(event.pos())):
+        if not self.scene().itemAt(self.mapToScene(event.pos()), Qt.QtGui.QTransform()):
             if (event.button() == Qt.QtCore.Qt.RightButton and
                         event.modifiers() == Qt.QtCore.Qt.NoModifier):
-                self.signal_context_request.emit(self.scene().itemAt(self.mapToScene(event.pos())))
+                self.signal_context_request.emit(self.scene().itemAt(self.mapToScene(event.pos())), Qt.QtGui.QTransform())
         super(Nodz, self).mousePressEvent(event)
 
     def _deleteSelectedNodes(self):
@@ -1736,7 +1738,7 @@ class Nodegraph(Basegraph):
 
         """
         self.nodes_dict[node.name] = node
-        if node:
+        if node and not node.node_type in self.RESERVED_NODE_TYPES:
             self.graph.signal_after_node_created.emit(node)
 
     def on_after_node_created(self, node):
