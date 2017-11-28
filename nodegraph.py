@@ -110,22 +110,22 @@ class Basegraph(object):
     def on_rename_field_request(self):
         raise NotImplementedError
 
-    def on_rename_input_accepted(self, new_node_name):
+    def on_rename_field_input_accepted(self, new_node_name):
         raise NotImplementedError
 
     def on_context_request(self, widget):
         raise NotImplementedError
 
-    def on_creation_input_accepted(self, node_type):
+    def on_creation_field_input_accepted(self, node_type):
         raise NotImplementedError
 
     def on_search_field_opened(self):
         raise NotImplementedError
 
-    def on_search_input_accepted(self, node_name):
+    def on_search_fiel_input_accepted(self, node_name):
         raise NotImplementedError
 
-    def on_attribute_input_accepted(self, node_name, attribute_name):
+    def on_attribute_field_input_accepted(self, node_name, attribute_name):
         raise NotImplementedError
 
     def on_node_created(self, node):
@@ -243,6 +243,7 @@ class ItemSignals(Qt.QtCore.QObject):
     signal_socket_created = Qt.QtCore.Signal(object)
     signal_plug_created = Qt.QtCore.Signal(object)
     signal_name_changed = Qt.QtCore.Signal(object)
+    signal_selected = Qt.QtCore.Signal(object)
 
     def __init__(self):
         Qt.QtCore.QObject.__init__(self)
@@ -484,13 +485,13 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
     Original implementation customization
     """
-
     signal_node_created = Qt.QtCore.Signal(object)
     signal_nodes_deleted = Qt.QtCore.Signal(object)
+    signal_nodes_selected = Qt.QtCore.Signal(object)
     signal_after_node_created = Qt.QtCore.Signal(object)
     signal_node_name_changed = Qt.QtCore.Signal(object, str, str)
-    signal_node_plug_created = Qt.QtCore.Signal(object)
-    signal_node_socket_created = Qt.QtCore.Signal(object)
+    signal_plug_created = Qt.QtCore.Signal(object)
+    signal_socket_created = Qt.QtCore.Signal(object)
     signal_connection_made = Qt.QtCore.Signal(object)
     signal_disconnection_made = Qt.QtCore.Signal(object)
     signal_about_attribute_create = Qt.QtCore.Signal(str, str)
@@ -499,6 +500,10 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     signal_search_field_request = Qt.QtCore.Signal()
     signal_rename_field_request = Qt.QtCore.Signal()
     signal_layout_request = Qt.QtCore.Signal()
+    signal_plug_connected = None
+    signal_plug_disconnected = None
+    signal_socket_connected = None
+    signal_socket_disconnected = None
 
     def __init__(self, parent):
         # unfortunately nodz_main.Nodz expects a default config file at the same level as the module
@@ -513,6 +518,15 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         self._context = GraphContext(self)
         self._attribute_context = AttributeContext(self)
         self._backdrop_context = BackdropContext(self)
+
+        # patching original signals
+        self.signal_plug_connected = self.signal_PlugConnected
+        self.signal_plug_disconnected = self.signal_PlugDisconnected
+        self.signal_socket_connected = self.signal_SocketConnected
+        self.signal_socket_disconnected = self.signal_SocketDisconnected
+
+        # test
+        self.selected_nodes = []
 
     @property
     def rename_field(self):
@@ -842,6 +856,9 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     def on_socket_created(self, socket_item):
         pass
 
+    def on_selected(self, node):
+        pass
+
     def layout_nodes(self, node_names=None):
         """ rearranges node positions
 
@@ -941,6 +958,14 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         """
         pass
 
+    def _returnSelection(self):
+        """
+        Wrapper to return selected items.
+
+        """
+        super(Nodz, self)._returnSelection()
+        self.signal_nodes_selected.emit(self.selected_nodes)
+
 
 class Nodegraph(Basegraph):
     """ main Nodegraph that should be accessable without any host application
@@ -969,15 +994,19 @@ class Nodegraph(Basegraph):
         # add the graph to our window
         self.window.central_layout.addWidget(self.graph)
 
-        # set slots
-        self.register_events()
+        # appending reserved nodetypes
+        self.configuration.available_node_types.append("backdrop")
+        self.creation_field.available_items = self.configuration.available_node_types
 
-        self.creation_field.available_items = self.configuration.available_node_types + ["backdrop"]
-
+        # patching
+        self.graph.on_context_request = self.on_context_request
+        self.graph.on_plug_created = self.on_plug_created
+        self.graph.on_socket_created = self.on_socket_created
+        self.graph.create_backdrop = self.create_backdrop
         self.graph.delete_node = self._delete_node
         self.graph.get_node_by_name = self.get_node_by_name
 
-        self._initialized = True
+        self.register_events()
 
     @property
     def window(self):
@@ -1303,239 +1332,55 @@ class Nodegraph(Basegraph):
         Returns:
 
         """
-        # patching per node slot
-        self.graph.on_context_request = self.on_context_request
-        self.graph.on_plug_created = self.on_plug_created
-        self.graph.on_socket_created = self.on_socket_created
-        self.graph.create_backdrop = self.create_backdrop
 
-        # @todo use a event factory to remove boilerplate
-        self.events.add_event("creation_field_request",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_creation_field_request,
-                                          self.on_creation_field_request
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_creation_field_request,
-                                            self.on_creation_field_request
-                                            )
-                              )
-        self.events.add_event("creation_field_input_accepted",
-                              adder=self._connect_slot,
-                              adder_args=(self.creation_field.signal_input_accepted,
-                                          self.on_creation_input_accepted
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.creation_field.signal_input_accepted,
-                                            self.on_creation_input_accepted
-                                            )
-                              )
-        self.events.add_event("search_field_request",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_search_field_request,
-                                          self.on_search_field_request
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_search_field_request,
-                                            self.on_search_field_request
-                                            )
-                              )
-        self.events.add_event("search_field_input_accepted",
-                              adder=self._connect_slot,
-                              adder_args=(self.search_field.signal_input_accepted,
-                                          self.on_search_input_accepted
-                                          ),
-                              remover=self._connect_slot,
-                              remover_args=(self.search_field.signal_input_accepted,
-                                            self.on_search_input_accepted
-                                            )
-                              )
-        self.events.add_event("search_field_opened",
-                              adder=self._connect_slot,
-                              adder_args=(self.search_field.signal_opened,
-                                          self.on_search_field_opened
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.search_field.signal_opened,
-                                            self.on_search_field_opened
-                                            )
-                              )
-        self.events.add_event("context_request",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_context_request,
-                                          self.on_context_request
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_context_request,
-                                            self.on_context_request
-                                            )
-                              )
-        self.events.add_event("layout_request",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_layout_request,
-                                          self.on_layout_request
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_layout_request,
-                                            self.on_layout_request
-                                            )
-                              )
-        self.events.add_event("rename_field_request",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_rename_field_request,
-                                          self.on_rename_field_request
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_rename_field_request,
-                                            self.on_rename_field_request
-                                            )
-                              )
-        self.events.add_event("rename_field_input_accepted",
-                              adder=self._connect_slot,
-                              adder_args=(self.rename_field.signal_input_accepted,
-                                          self.on_rename_input_accepted
-                                          ),
-                              remover=self._connect_slot,
-                              remover_args=(self.rename_field.signal_input_accepted,
-                                            self.on_rename_input_accepted
-                                            )
-                              )
-        self.events.add_event("attribute_field_input_accepted",
-                              adder=self._connect_slot,
-                              adder_args=(self.attribute_context.signal_input_accepted,
-                                          self.on_attribute_input_accepted),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.attribute_context.signal_input_accepted,
-                                            self.on_attribute_input_accepted
-                                            )
-                              )
-        self.events.add_event("node_created",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_node_created,
-                                          self.on_node_created),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_node_created,
-                                            self.on_node_created)
-                              )
-        self.events.add_event("after_node_created",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_after_node_created,
-                                          self.on_after_node_created
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_after_node_created,
-                                            self.on_after_node_created
-                                            )
-                              )
-        self.events.add_event("node_deleted",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_nodes_deleted,
-                                          self.on_nodes_deleted
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_nodes_deleted,
-                                            self.on_nodes_deleted
-                                            )
-                              )
-        self.events.add_event("node_name_changed",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_node_name_changed,
-                                          self.on_node_name_changed
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_node_name_changed,
-                                            self.on_node_name_changed
-                                            )
-                              )
-        self.events.add_event("about_attribute_create",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_about_attribute_create,
-                                          self.on_about_attribute_create),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_about_attribute_create,
-                                            self.on_about_attribute_create
-                                            )
-                              )
-        self.events.add_event("socket_created",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_node_socket_created,
-                                          self.on_socket_created
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_node_socket_created,
-                                            self.on_socket_created
-                                            )
-                              )
-        self.events.add_event("plug_created",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_node_plug_created,
-                                          self.on_plug_created
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_node_plug_created,
-                                            self.on_plug_created
-                                            )
-                              )
-        self.events.add_event("connection_made",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_connection_made,
-                                          self.on_connection_made
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_connection_made,
-                                              self.on_connection_made
-                                            )
-                              )
-        self.events.add_event("disconnection_made",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_disconnection_made,
-                                          self.on_disconnection_made
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_disconnection_made,
-                                              self.on_disconnection_made
-                                            )
-                              )
-        self.events.add_event("plug_connected",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_PlugConnected,
-                                          self.on_plug_connected
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_PlugConnected,
-                                              self.on_plug_connected
-                                            )
-                              )
-        self.events.add_event("plug_disconnected",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_PlugDisconnected,
-                                          self.on_plug_disconnected
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_PlugDisconnected,
-                                              self.on_plug_disconnected
-                                            )
-                              )
-        self.events.add_event("socket_connected",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_SocketConnected,
-                                          self.on_socket_connected
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_SocketConnected,
-                                            self.on_socket_connected
-                                            )
-                              )
-        self.events.add_event("socket_disconnected",
-                              adder=self._connect_slot,
-                              adder_args=(self.graph.signal_SocketDisconnected,
-                                          self.on_socket_disconnected
-                                          ),
-                              remover=self._disconnect_slot,
-                              remover_args=(self.graph.signal_SocketDisconnected,
-                                              self.on_socket_disconnected
-                                            )
-                              )
+        event_name_prefix = {"graph": "",
+                             "creation_field": "creation_field_",
+                             "search_field": "search_field_",
+                             "rename_field": "rename_field_",
+                             "attribute_context": "attribute_context_"
+                             }
+
+        events_data = {"graph": ["creation_field_request",
+                                 "search_field_request",
+                                 "rename_field_request",
+                                 "context_request",
+                                 "layout_request",
+                                 "node_created",
+                                 "after_node_created",
+                                 "nodes_selected",
+                                 "nodes_deleted",
+                                 "node_name_changed",
+                                 "about_attribute_create",
+                                 "socket_created",
+                                 "plug_created",
+                                 "connection_made",
+                                 "disconnection_made",
+                                 "plug_connected",
+                                 "plug_disconnected",
+                                 "socket_connected",
+                                 "socket_disconnected"
+                                 ],
+                       "rename_field": ["input_accepted"],
+                       "search_field": ["input_accepted",
+                                        "opened"
+                                        ],
+                       "creation_field": ["input_accepted"],
+                       "attribute_context": ["input_accepted"]
+                       }
+
+        for obj_name, obj_events in events_data.iteritems():
+            obj = self.__getattribute__(obj_name)
+            for event in obj_events:
+                event_name = event_name_prefix[obj_name] + event
+                signal = obj.__getattribute__("signal_" + event)
+                func = self.__getattribute__("on_" + event_name)
+                args = (signal, func)
+                self.events.add_event(event_name,
+                                      adder=self._connect_slot,
+                                      adder_args=args,
+                                      remover=self._disconnect_slot,
+                                      remover_args=args
+                                      )
 
     def layout_selected_nodes(self):
         """ rearranges node positions of selected nodes
@@ -1632,7 +1477,7 @@ class Nodegraph(Basegraph):
         """
         self.rename_field.open()
 
-    def on_rename_input_accepted(self, new_node_name):
+    def on_rename_field_input_accepted(self, new_node_name):
         """ should be called when a rename_input_accepted signal was emitted
 
         Args:
@@ -1673,7 +1518,7 @@ class Nodegraph(Basegraph):
 
         return _to_open
 
-    def on_creation_input_accepted(self, node_type):
+    def on_creation_field_input_accepted(self, node_type):
         """ should be called when a creation field widgets input_accepted signal was emitted
 
         creates a NodeItem of given type and emit additional signals
@@ -1696,7 +1541,7 @@ class Nodegraph(Basegraph):
         """
         self.search_field.available_items = self.all_node_names
 
-    def on_search_input_accepted(self, node_name):
+    def on_search_field_input_accepted(self, node_name):
         """ should be called when the search field widgets input_accepted signal was emitted
 
         Selects and focus the node by the given name from the searchfield
@@ -1711,7 +1556,7 @@ class Nodegraph(Basegraph):
             self.nodes_dict[node_name].setSelected(True)
             self.graph._focus()
 
-    def on_attribute_input_accepted(self, node_name, attribute_name):
+    def on_attribute_context_input_accepted(self, node_name, attribute_name):
         """ should be called when the attribute field widgets input_accepted signal was emitted
 
         Will close the attribute field widget and emit a different signal that sends the node
@@ -1751,8 +1596,9 @@ class Nodegraph(Basegraph):
     def on_node_name_changed(self, node, old_name, new_name):
         pass
 
-    def on_node_selected(self):
-        pass
+    def on_nodes_selected(self, nodes_list):
+        print self.all_nodes
+        print nodes_list
 
     def on_nodes_deleted(self, nodeitems_list):
         pass
