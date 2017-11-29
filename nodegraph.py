@@ -26,6 +26,9 @@ class Basegraph(object):
 
     """
 
+    RESERVED_NODETYPES = ["backdrop",
+                          "dot"]
+
     def __init__(self, *args, **kwargs):
         super(Basegraph, self).__init__()
 
@@ -964,7 +967,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         """
         super(Nodz, self)._returnSelection()
-        self.signal_nodes_selected.emit(self.selected_nodes)
+        self.signal_nodes_selected.emit(self.scene().selectedItems())
 
 
 class Nodegraph(Basegraph):
@@ -995,7 +998,8 @@ class Nodegraph(Basegraph):
         self.window.central_layout.addWidget(self.graph)
 
         # appending reserved nodetypes
-        self.configuration.available_node_types.append("backdrop")
+        for node_type in self.RESERVED_NODETYPES:
+            self.configuration.available_node_types.append(node_type)
         self.creation_field.available_items = self.configuration.available_node_types
 
         # patching
@@ -1596,8 +1600,7 @@ class Nodegraph(Basegraph):
         pass
 
     def on_nodes_selected(self, nodes_list):
-        print self.all_nodes
-        print nodes_list
+        pass
 
     def on_nodes_deleted(self, nodeitems_list):
         pass

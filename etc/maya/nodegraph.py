@@ -271,3 +271,7 @@ class Nodzgraph(nodegraph.Nodegraph):
                 pmc.delete(node.name)
             except RuntimeWarning:
                 LOG.warning("Not able to delete host node '{0}'".format(node.name), exc_info=True)
+
+    def on_nodes_selected(self, nodes_list):
+        selection = [_.name for _ in nodes_list if not _.node_type in self.RESERVED_NODETYPES]
+        pmc.select(selection)
