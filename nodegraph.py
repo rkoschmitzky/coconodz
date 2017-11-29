@@ -1333,45 +1333,44 @@ class Nodegraph(Basegraph):
 
         """
 
-        event_name_prefix = {"graph": "",
-                             "creation_field": "creation_field_",
-                             "search_field": "search_field_",
-                             "rename_field": "rename_field_",
-                             "attribute_context": "attribute_context_"
+        # events factory to avoid unnecessary boilerplate
+        event_name_prefix = {self.graph: "",
+                             self.creation_field: "creation_field_",
+                             self.search_field: "search_field_",
+                             self.rename_field: "rename_field_",
+                             self.attribute_context: "attribute_context_"
                              }
-
-        events_data = {"graph": ["creation_field_request",
-                                 "search_field_request",
-                                 "rename_field_request",
-                                 "context_request",
-                                 "layout_request",
-                                 "node_created",
-                                 "after_node_created",
-                                 "nodes_selected",
-                                 "nodes_deleted",
-                                 "node_name_changed",
-                                 "about_attribute_create",
-                                 "socket_created",
-                                 "plug_created",
-                                 "connection_made",
-                                 "disconnection_made",
-                                 "plug_connected",
-                                 "plug_disconnected",
-                                 "socket_connected",
-                                 "socket_disconnected"
-                                 ],
-                       "rename_field": ["input_accepted"],
-                       "search_field": ["input_accepted",
-                                        "opened"
-                                        ],
-                       "creation_field": ["input_accepted"],
-                       "attribute_context": ["input_accepted"]
+        events_data = {self.graph: ["creation_field_request",
+                                    "search_field_request",
+                                    "rename_field_request",
+                                    "context_request",
+                                    "layout_request",
+                                    "node_created",
+                                    "after_node_created",
+                                    "nodes_selected",
+                                    "nodes_deleted",
+                                    "node_name_changed",
+                                    "about_attribute_create",
+                                    "socket_created",
+                                    "plug_created",
+                                    "connection_made",
+                                    "disconnection_made",
+                                    "plug_connected",
+                                    "plug_disconnected",
+                                    "socket_connected",
+                                    "socket_disconnected"
+                                    ],
+                       self.rename_field: ["input_accepted"],
+                       self.search_field: ["input_accepted",
+                                           "opened"
+                                           ],
+                       self.creation_field: ["input_accepted"],
+                       self.attribute_context: ["input_accepted"]
                        }
 
-        for obj_name, obj_events in events_data.iteritems():
-            obj = self.__getattribute__(obj_name)
+        for obj, obj_events in events_data.iteritems():
             for event in obj_events:
-                event_name = event_name_prefix[obj_name] + event
+                event_name = event_name_prefix[obj] + event
                 signal = obj.__getattribute__("signal_" + event)
                 func = self.__getattribute__("on_" + event_name)
                 args = (signal, func)

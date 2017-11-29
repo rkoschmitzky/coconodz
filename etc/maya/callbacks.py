@@ -10,7 +10,6 @@ RELEVANT_BEFORE_SCENE_CALLBACKS = ["before_open", "before_new", "before_import",
 RELEVANT_AFTER_SCENE_CALLBACKS = ["after_open", "after_new", "after_import", "after_plugin"]
 
 
-
 def remove_callback(callback_id):
     try:
         om.MDGMessage.removeCallback(callback_id)
@@ -27,7 +26,7 @@ def remove_callbacks_only(id_list):
             remove_callback(item)
 
 
-def add_node_name_changed_callback(callable):
+def on_node_name_changed(callable):
 
     def _get_names(node, prevName, clientData):
         current_name = pmc.PyNode(node).name()
@@ -38,7 +37,7 @@ def add_node_name_changed_callback(callable):
     return om.MNodeMessage.addNameChangedCallback(om.MObject(), _get_names)
 
 
-def add_node_deleted_callback(callable):
+def on_node_deleted(callable):
 
     def _get_name(node, clientData):
         node_name = pmc.PyNode(node).name()
@@ -48,7 +47,7 @@ def add_node_deleted_callback(callable):
     return om.MDGMessage.addNodeRemovedCallback(_get_name)
 
 
-def add_node_created_callback(callable):
+def on_node_created(callable):
 
     def _get_name_and_type(node, clientData):
         node = pmc.PyNode(node)
@@ -58,7 +57,7 @@ def add_node_created_callback(callable):
     return om.MDGMessage.addNodeAddedCallback(_get_name_and_type)
 
 
-def add_connection_made_callback(callable):
+def on_connection_made(callable):
 
     def _get_plug_names(srcPlug, destPlug, made, clientData):
         src_plug = pmc.PyNode(srcPlug)
@@ -70,7 +69,7 @@ def add_connection_made_callback(callable):
     return om.MDGMessage.addConnectionCallback(_get_plug_names)
 
 
-def add_disconnection_made_callback(callable):
+def on_disconnection_made(callable):
 
     def _get_plug_names(srcPlug, destPlug, made, clientData):
         src_plug = pmc.PyNode(srcPlug)
@@ -82,31 +81,31 @@ def add_disconnection_made_callback(callable):
     return om.MDGMessage.addConnectionCallback(_get_plug_names)
 
 
-def add_before_scene_open_callback(callable):
+def on_before_scene_open(callable):
     return om.MSceneMessage.addCallback(om.MSceneMessage.kBeforeOpen, callable)
 
 
-def add_after_scene_open_callback(callable):
+def on_after_scene_open(callable):
     return om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, callable)
 
 
-def add_before_new_scene_callback(callable):
+def on_before_new_scene(callable):
     return om.MSceneMessage.addCallback(om.MSceneMessage.kBeforeNew, callable)
 
 
-def add_after_new_scene_callback(callable):
+def on_after_new_scene(callable):
     return om.MSceneMessage.addCallback(om.MSceneMessage.kAfterNew, callable)
 
 
-def add_before_import_callback(callable):
+def on_before_import(callable):
     return om.MSceneMessage.addCallback(om.MSceneMessage.kBeforeImport, callable)
 
 
-def add_after_import_callback(callable):
+def on_after_import(callable):
     return om.MSceneMessage.addCallback(om.MSceneMessage.kAfterImport, callable)
 
 
-def add_before_plugin_load_callback(callable):
+def on_before_plugin_load(callable):
 
     def _get_plugins(strs, *args, **kwargs):
         if not strs[1] == "coconodz_maya":
@@ -115,7 +114,7 @@ def add_before_plugin_load_callback(callable):
     return om.MSceneMessage.addStringArrayCallback(om.MSceneMessage.kAfterPluginLoad, _get_plugins)
 
 
-def add_after_plugin_load_callback(callable):
+def on_after_plugin_load(callable):
 
     def _get_plugins(strs, *args, **kwargs):
         if not strs[1] == "coconodz_maya":
@@ -124,38 +123,38 @@ def add_after_plugin_load_callback(callable):
     return om.MSceneMessage.addStringArrayCallback(om.MSceneMessage.kAfterPluginLoad, _get_plugins)
 
 
-def add_before_scene_callbacks(callable, relevants=RELEVANT_BEFORE_SCENE_CALLBACKS):
+def on_before_scene_changes(callable, relevants=RELEVANT_BEFORE_SCENE_CALLBACKS):
 
     callback_ids = []
 
     for relevant in relevants:
         if relevant == "before_open":
-            callback_ids.append(add_before_scene_open_callback(callable))
+            callback_ids.append(on_before_scene_open(callable))
         elif relevant == "before_new":
-            callback_ids.append(add_before_new_scene_callback(callable))
+            callback_ids.append(on_before_new_scene(callable))
         elif relevant == "before_import":
-            callback_ids.append(add_before_import_callback(callable))
+            callback_ids.append(on_before_import(callable))
         elif relevant == "before_plugin":
-            callback_ids.append(add_before_plugin_load_callback(callable))
+            callback_ids.append(on_before_plugin_load(callable))
         else:
             raise NotImplementedError
 
     return callback_ids
 
 
-def add_after_scene_callbacks(callable, relevants=RELEVANT_AFTER_SCENE_CALLBACKS):
+def on_after_scene_changes(callable, relevants=RELEVANT_AFTER_SCENE_CALLBACKS):
 
     callback_ids = []
 
     for relevant in relevants:
         if relevant == "after_open":
-            callback_ids.append(add_after_scene_open_callback(callable))
+            callback_ids.append(on_after_scene_open(callable))
         elif relevant == "after_new":
-            callback_ids.append(add_after_new_scene_callback(callable))
+            callback_ids.append(on_after_new_scene(callable))
         elif relevant == "after_import":
-            callback_ids.append(add_after_import_callback(callable))
+            callback_ids.append(on_after_import(callable))
         elif relevant == "after_plugin":
-            callback_ids.append(add_after_plugin_load_callback(callable))
+            callback_ids.append(on_after_plugin_load(callable))
         else:
             raise NotImplementedError
 

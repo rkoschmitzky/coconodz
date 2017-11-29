@@ -69,7 +69,31 @@ class Nodzgraph(nodegraph.Nodegraph):
     def register_events(self):
         super(Nodzgraph, self).register_events()
 
-        # @todo remove boilerplate
+        event_name_prefix = {callbacks: "host_"}
+        events_data = {callbacks: ["node_created",
+                                   "node_name_changed",
+                                   "node_deleted",
+                                   "connection_made",
+                                   "disconnection_made",
+                                   "before_scene_changes",
+                                   "after_scene_changes"]
+                       }
+        # events factory to avoid unnecessary boilerplate
+        for obj, obj_events in events_data.iteritems():
+            for event in obj_events:
+                event_name = event_name_prefix[obj] + event
+                self.events.add_event(event_name,
+                                      adder=obj.__getattribute__("on_" + event),
+                                      adder_args=(self.__getattribute__("on_" + event_name),
+                                                  )
+                                      )
+                self.events.attach_remover(event_name,
+                                           callable=callbacks.remove_callbacks_only,
+                                           callable_args=(self.events.data[event_name]["id_list"],
+                                                          )
+                                           )
+
+        # behaves too differently to be part of the factory easily
         self.events.add_event("ShadingEngine_template_hook",
                               adder=pmc.callbacks,
                               adder_kwargs={"addCallback": callbacks.add_template_custom_content,
@@ -78,62 +102,6 @@ class Nodzgraph(nodegraph.Nodegraph):
                                             },
                               remover=remove_template_custom_content
                               )
-        self.events.add_event("host_node_created",
-                              adder=callbacks.add_node_created_callback,
-                              adder_args=(self.on_host_node_created, )
-                              )
-        self.events.attach_remover("host_node_created",
-                                   callable=callbacks.remove_callbacks_only,
-                                   callable_args=(self.events.data["host_node_created"]["id_list"], )
-                                   )
-        self.events.add_event("host_node_name_changed",
-                              adder=callbacks.add_node_name_changed_callback,
-                              adder_args=(self.on_host_node_name_changed,)
-                              )
-        self.events.attach_remover("host_node_name_changed",
-                                   callable=callbacks.remove_callbacks_only,
-                                   callable_args=(self.events.data["host_node_name_changed"]["id_list"], )
-                                   )
-        self.events.add_event("host_node_deleted",
-                              adder=callbacks.add_node_deleted_callback,
-                              adder_args=(self.on_host_node_deleted, )
-                              )
-        self.events.attach_remover("host_node_deleted",
-                                   callable=callbacks.remove_callbacks_only,
-                                   callable_args=(self.events.data["host_node_deleted"]["id_list"], )
-                                   )
-        self.events.add_event("host_connection_made",
-                              adder=callbacks.add_connection_made_callback,
-                              adder_args=(self.on_host_connection_made, )
-                              )
-        self.events.attach_remover("host_connection_made",
-                                   callable=callbacks.remove_callbacks_only,
-                                   callable_args=(self.events.data["host_connection_made"]["id_list"], )
-                                   )
-        self.events.add_event("host_disconnection_made",
-                              adder=callbacks.add_disconnection_made_callback,
-                              adder_args=(self.on_host_disconnection_made, )
-                              )
-        self.events.attach_remover("host_disconnection_made",
-                                   callable=callbacks.remove_callbacks_only,
-                                   callable_args=(self.events.data["host_disconnection_made"]["id_list"], )
-                                   )
-        self.events.add_event("before_scene_changes",
-                              adder=callbacks.add_before_scene_callbacks,
-                              adder_args=(self.on_before_scene_changes, )
-                              )
-        self.events.attach_remover("before_scene_changes",
-                                   callable=callbacks.remove_callbacks_only,
-                                   callable_args=(self.events.data["before_scene_changes"]["id_list"], )
-                                   )
-        self.events.add_event("after_scene_changes",
-                              adder=callbacks.add_after_scene_callbacks,
-                              adder_args=(self.on_after_scene_changes, )
-                              )
-        self.events.attach_remover("after_scene_changes",
-                                   callable=callbacks.remove_callbacks_only,
-                                   callable_args=(self.events.data["after_scene_changes"]["id_list"], )
-                                   )
 
     def append_available_node_categories(self):
         """ appends available node types in categories
@@ -194,13 +162,14 @@ class Nodzgraph(nodegraph.Nodegraph):
         attribute_type = pmc.PyNode("{0}.{1}".format(node_name, attribute_name)).type()
         node.add_attribute(attribute_name, data_type=attribute_type)
 
-    def on_before_scene_changes(self, *args):
+    def on_host_before_scene_changes(self, *args):
         self.events.pause_events(exclude=["before_scene_changes", "after_scene_changes"])
 
     @decorators.execute_deferred
-    def on_after_scene_changes(self, *args):
+    def on_host_after_scene_changes(self, *args):
         self.events.resume_paused_events()
 
+    @SuppressEvents("node_created")
     def on_host_node_created(self, node_name, node_type):
         """ slot extension
 
