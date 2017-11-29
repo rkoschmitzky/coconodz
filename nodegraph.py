@@ -631,7 +631,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         if not self.scene().itemAt(self.mapToScene(event.pos()), Qt.QtGui.QTransform()):
             if (event.button() == Qt.QtCore.Qt.RightButton and
                         event.modifiers() == Qt.QtCore.Qt.NoModifier):
-                self.signal_context_request.emit(self.scene().itemAt(self.mapToScene(event.pos())), Qt.QtGui.QTransform())
+                self.signal_context_request.emit(self.scene().itemAt(self.mapToScene(event.pos()), Qt.QtGui.QTransform()))
         super(Nodz, self).mousePressEvent(event)
 
     def _deleteSelectedNodes(self):
