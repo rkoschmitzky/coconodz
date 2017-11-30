@@ -134,19 +134,14 @@ class Nodzgraph(nodegraph.Nodegraph):
                                 connections_dict=node_connections)
 
     def on_context_request(self, widget):
-        _widget = super(Nodzgraph, self).on_context_request(widget)
 
-        if isinstance(widget, nodegraph.Nodz):
-            _widget.available_items = []
-        elif isinstance(widget, nodegraph.NodeItem):
-            node = pmc.PyNode(_widget.property("node_name"))
+        if isinstance(widget, nodegraph.NodeItem):
+            node = pmc.PyNode(widget.name)
             if node:
-                # only update items if the node has changed
-                if _widget.property("last_node_name") != node.name():
-                    _widget.available_items = applib.get_attribute_tree(node)
-                    _widget.setProperty("last_node_name", node.name())
-        else:
-            pass
+                self.attribute_context.available_items = applib.get_attribute_tree(pmc.PyNode(widget.name))
+
+        super(Nodzgraph, self).on_context_request(widget)
+
 
     def on_about_attribute_create(self, node_name, attribute_name):
         """ slot override
