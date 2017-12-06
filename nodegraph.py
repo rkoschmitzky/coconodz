@@ -275,8 +275,8 @@ class BackdropItem(Backdrop):
         """
         if event.button() == Qt.QtCore.Qt.RightButton:
             self.signal_context_request.emit(self)
-        else:
-            super(BackdropItem, self).mousePressEvent(event)
+
+        super(BackdropItem, self).mousePressEvent(event)
 
 
 class NodeItem(nodz_main.NodeItem):
@@ -371,8 +371,8 @@ class NodeItem(nodz_main.NodeItem):
         """
         if event.button() == Qt.QtCore.Qt.RightButton:
             self.signal_context_request.emit(self)
-        else:
-            super(NodeItem, self).mousePressEvent(event)
+
+        super(NodeItem, self).mousePressEvent(event)
 
     def add_attribute(self, name, add_mode=None, plug=True, socket=True, data_type=""):
         """ wrapper around the _createAttribute method that allows better customization of attribute generation
@@ -442,18 +442,23 @@ class NodeItem(nodz_main.NodeItem):
             connection.updatePath()
 
 
+
 class ConnectionItem(nodz_main.ConnectionItem):
     """ extends the nodz_main.ConnectionItem class
 
     Original implementation customization
     """
 
-    def __init__(self, source_point, target_point, source, target, mode):
+    def __init__(self, source_point, target_point, source, target):
         super(ConnectionItem, self).__init__(source_point, target_point, source, target)
-        self._mode = mode
+
         self.setAcceptHoverEvents(True)
-        self.setFlag(Qt.QtWidgets.QGraphicsItem.ItemIsMovable)
         self.setFlag(Qt.QtWidgets.QGraphicsItem.ItemIsSelectable)
+
+        self.configuration = self.source.scene().views()[0].configuration
+
+        self._selected_pen = Qt.QtGui.QPen(Qt.QtGui.QColor(255, 255, 255, 255))
+        self._selected_pen.setWidth(3)
 
     def updatePath(self):
         """ overrides the original method
@@ -472,15 +477,37 @@ class ConnectionItem(nodz_main.ConnectionItem):
         ctrl1 = Qt.QtCore.QPointF(self.source_point.x() + dx, self.source_point.y() + dy * 0)
         ctrl2 = Qt.QtCore.QPointF(self.source_point.x() + dx, self.source_point.y() + dy * 1)
 
-        if not self._mode:
-            # using cubic bezier as default
-            path.cubicTo(ctrl1, ctrl2, self.target_point)
-        elif self._mode == "line":
+        # handle interpolation mode
+        if self.configuration.connection_interpolation == "line":
             path.lineTo(self.target_point)
-        elif self._mode == "bezier":
+        elif self.configuration.connection_interpolation == "bezier":
             path.cubicTo(ctrl1, ctrl2, self.target_point)
 
         self.setPath(path)
+
+    def mousePressEvent(self, event):
+        self.setSelected(True)
+
+        #super(ConnectionItem, self).mousePressEvent(event)
+    
+    def mouseReleaseEvent(self, event):
+        pass
+        #self.setSelected(False)
+        #super(ConnectionItem, self).mouseReleaseEvent(event)
+
+    def hoverEnterEvent(self, event):
+        self.setPen(self._selected_pen)
+        super(ConnectionItem, self).hoverEnterEvent(event)
+
+    def hoverLeaveEvent(self, event):
+        self.setPen(self._pen)
+        super(ConnectionItem, self).hoverLeaveEvent(event)
+
+    def shape(self):
+        stroker = Qt.QtGui.QPainterPathStroker()
+        stroker.setWidth(5)
+        shape = stroker.createStroke(self.path())
+        return shape
 
 
 class Nodz(ConfiguationMixin, nodz_main.Nodz):
@@ -490,7 +517,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
     """
     signal_node_created = Qt.QtCore.Signal(object)
     signal_nodes_deleted = Qt.QtCore.Signal(object)
-    signal_nodes_selected = Qt.QtCore.Signal(object)
+    signal_selection_changed = Qt.QtCore.Signal(object)
     signal_after_node_created = Qt.QtCore.Signal(object)
     signal_node_name_changed = Qt.QtCore.Signal(object, str, str)
     signal_plug_created = Qt.QtCore.Signal(object)
@@ -629,8 +656,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
 
         """
         if not self.scene().itemAt(self.mapToScene(event.pos()), Qt.QtGui.QTransform()):
-            if (event.button() == Qt.QtCore.Qt.RightButton and
-                        event.modifiers() == Qt.QtCore.Qt.NoModifier):
+            if event.button() == Qt.QtCore.Qt.RightButton and event.modifiers() == Qt.QtCore.Qt.NoModifier:
                 self.signal_context_request.emit(self.scene().itemAt(self.mapToScene(event.pos()), Qt.QtGui.QTransform()))
         super(Nodz, self).mousePressEvent(event)
 
@@ -789,7 +815,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         Returns:
 
         """
-        connection = ConnectionItem(plug.center(), socket.center(), plug, socket, self.configuration.connection_interpolation)
+        connection = ConnectionItem(plug.center(), socket.center(), plug, socket)
 
         connection.plugNode = plug.parentItem().name
         connection.plugAttr = plug.attribute
@@ -962,12 +988,13 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         pass
 
     def _returnSelection(self):
-        """
-        Wrapper to return selected items.
+        """ overrides the default selection behavior
+
+        We will emit all selected items in the scene and not only selected NodeItem names
+        Returns:
 
         """
-        super(Nodz, self)._returnSelection()
-        self.signal_nodes_selected.emit(self.scene().selectedItems())
+        self.signal_selection_changed.emit(self.scene().selectedItems())
 
 
 class Nodegraph(Basegraph):
@@ -1009,6 +1036,7 @@ class Nodegraph(Basegraph):
         self.graph.create_backdrop = self.create_backdrop
         self.graph.delete_node = self._delete_node
         self.graph.get_node_by_name = self.get_node_by_name
+        nodz_main.connection_holder = ConnectionItem
 
         self.register_events()
 
@@ -1351,7 +1379,7 @@ class Nodegraph(Basegraph):
                                     "layout_request",
                                     "node_created",
                                     "after_node_created",
-                                    "nodes_selected",
+                                    "selection_changed",
                                     "nodes_deleted",
                                     "node_name_changed",
                                     "about_attribute_create",
@@ -1599,8 +1627,8 @@ class Nodegraph(Basegraph):
     def on_node_name_changed(self, node, old_name, new_name):
         pass
 
-    def on_nodes_selected(self, nodes_list):
-        pass
+    def on_selection_changed(self, selection):
+        print "current selection", selection
 
     def on_nodes_deleted(self, nodeitems_list):
         pass

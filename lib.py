@@ -486,7 +486,7 @@ class AttributeContext(ContextWidget):
         self.setup_ui()
 
     def on_tree_double_clicked(self, index):
-        """ defines whar will happen when the tree was double-clicked
+        """ defines what will happen when the tree was double-clicked
 
         Args:
             index:
