@@ -442,7 +442,6 @@ class NodeItem(nodz_main.NodeItem):
             connection.updatePath()
 
 
-
 class ConnectionItem(nodz_main.ConnectionItem):
     """ extends the nodz_main.ConnectionItem class
 
@@ -457,8 +456,21 @@ class ConnectionItem(nodz_main.ConnectionItem):
 
         self.configuration = self.source.scene().views()[0].configuration
 
-        self._selected_pen = Qt.QtGui.QPen(Qt.QtGui.QColor(255, 255, 255, 255))
-        self._selected_pen.setWidth(3)
+        self._selected_pen = Qt.QtGui.QPen(nodz_utils._convertDataToColor(
+                                           self.configuration.connection_highlight_color)
+                                           )
+        self._selected_pen.setWidth(2)
+
+        self.title = Qt.QtWidgets.QGraphicsTextItem("", parent=self)
+        self.title_font = Qt.QtGui.QFont(self.configuration.attr_font,
+                                         self.configuration.attr_font_size)
+        self.title.setFont(self.title_font)
+        self.title.setDefaultTextColor(nodz_utils._convertDataToColor(
+                                       self.configuration.connection_text_color)
+                                       )
+        self.source.scene().selectionChanged.connect(self._on_selection_changed)
+
+        self._moved = False
 
     def updatePath(self):
         """ overrides the original method
@@ -485,22 +497,27 @@ class ConnectionItem(nodz_main.ConnectionItem):
 
         self.setPath(path)
 
-    def mousePressEvent(self, event):
-        self.setSelected(True)
-
-        #super(ConnectionItem, self).mousePressEvent(event)
-    
-    def mouseReleaseEvent(self, event):
-        pass
-        #self.setSelected(False)
-        #super(ConnectionItem, self).mouseReleaseEvent(event)
+    def _show_connection_title(self):
+        self.title.setPlainText("{0}.{1} - {2}.{3}".format(self.source.parentItem().name,
+                                                            self.source.attribute,
+                                                            self.target.parentItem().name,
+                                                            self.target.attribute))
+        center_position = Qt.QtCore.QPointF(self.boundingRect().center().x() - (self.title.boundingRect().width() / 2),
+                                            self.boundingRect().center().y() - (self.title.boundingRect().height() / 2)
+                                            )
+        self.title.setPos(center_position)
+        self.title.setVisible(True)
 
     def hoverEnterEvent(self, event):
-        self.setPen(self._selected_pen)
+        self._show_connection_title()
+        if not self.isSelected():
+            self.setPen(self._selected_pen)
         super(ConnectionItem, self).hoverEnterEvent(event)
 
     def hoverLeaveEvent(self, event):
-        self.setPen(self._pen)
+        self.title.setVisible(False)
+        if not self.isSelected():
+            self.setPen(self._pen)
         super(ConnectionItem, self).hoverLeaveEvent(event)
 
     def shape(self):
@@ -508,6 +525,30 @@ class ConnectionItem(nodz_main.ConnectionItem):
         stroker.setWidth(5)
         shape = stroker.createStroke(self.path())
         return shape
+
+    def _on_selection_changed(self):
+        if self.isSelected():
+            self.setPen(self._selected_pen)
+        else:
+            self.setPen(self._pen)
+
+    def mousePressEvent(self, event):
+        self._moved = False
+        self.setSelected(True)
+
+    def mouseReleaseEvent(self, event):
+        if self._moved:
+            item = self.scene().itemAt(self.mapToScene(event.pos()), Qt.QtGui.QTransform())
+            if not (isinstance(item, nodz_main.PlugItem) or isinstance(item, nodz_main.SocketItem)):
+                self.target.disconnect(self)
+                self.source.disconnect(self)
+                scene = self.scene()
+                scene.removeItem(self)
+                scene.update()
+
+    def mouseMoveEvent(self, event):
+        self._moved = True
+        super(ConnectionItem, self).mouseMoveEvent(event)
 
 
 class Nodz(ConfiguationMixin, nodz_main.Nodz):
