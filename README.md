@@ -83,11 +83,18 @@ Main Goals:
 | grid_color                       | list   | color the canvas grid will use
 | slot_border                      | list   |
 | non_connectable_color            | list   | color the connection will use when attributes are not connectable, RGBA color list 0-255
+| connection_highlight:color       | list   | color when hovering over a connection, RGBA color list 0-255
+| connection_text_color            | list   | text color when hovering over a connection, RGBA color list 0-255
 | connection_interpolation         | string | connection shape, "bezier", linear
 | connection_inherit_datatype_color| bool   | if true connection will use the color specified for data type
 | connection_color                 | list   | default color the connection when not inheriting the data type color, RGBA color list 0-255
 | layout_margin_size               | int    |
-| node_placement                   | string | specifies where a created node will be placed, supported "cursor" - uses the cursor position, creation field - uses position of the creation field widget
+| backdrop color                   | list   | default backdrop color, RGBA color list 0-255
+| backdrop_border_color            | list   | default backdrop border color, RGBA color list 0-255
+| backdrop_bounds                  | list   | default position and size of a backdrop, x, y, width, height
+| backdrop_title_font_size         | int    | default font size for backdrop titles
+| backdrop_description_font_size   | int    | default font size for backdrop descriptions
+| backdrop_font                    | int    | default backdrop title and description font
 
 <br>
 
