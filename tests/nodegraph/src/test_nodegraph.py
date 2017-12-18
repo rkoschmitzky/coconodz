@@ -70,7 +70,7 @@ class ConfigurationCase(TestCase):
         self.assertHasAttribute(Nodzgraph.configuration, "non_connectable_color")
         self.assertHasAttribute(Nodzgraph.configuration, "connection_inherit_datatype_color")
         self.assertHasAttribute(Nodzgraph.configuration, "connection_color")
-        self.assertHasAttribute(Nodzgraph.configuration,"connection_highlight_color")
+        self.assertHasAttribute(Nodzgraph.configuration, "connection_highlight_color")
         self.assertHasAttribute(Nodzgraph.configuration, "connection_text_color")
         self.assertHasAttribute(Nodzgraph.configuration, "node_default")
         self.assertHasAttribute(Nodzgraph.configuration, "attr_default")

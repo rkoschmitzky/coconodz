@@ -468,9 +468,10 @@ class ConnectionItem(nodz_main.ConnectionItem):
         self.title.setDefaultTextColor(nodz_utils._convertDataToColor(
                                        self.configuration.connection_text_color)
                                        )
-        self.source.scene().selectionChanged.connect(self._on_selection_changed)
+        #self.source.scene().selectionChanged.connect(self._on_selection_changed)
 
         self._moved = False
+        self._hovered = False
 
     def updatePath(self):
         """ overrides the original method
@@ -510,14 +511,12 @@ class ConnectionItem(nodz_main.ConnectionItem):
 
     def hoverEnterEvent(self, event):
         self._show_connection_title()
-        if not self.isSelected():
-            self.setPen(self._selected_pen)
+        self._hovered = True
         super(ConnectionItem, self).hoverEnterEvent(event)
 
     def hoverLeaveEvent(self, event):
         self.title.setVisible(False)
-        if not self.isSelected():
-            self.setPen(self._pen)
+        self._hovered = False
         super(ConnectionItem, self).hoverLeaveEvent(event)
 
     def shape(self):
@@ -525,12 +524,6 @@ class ConnectionItem(nodz_main.ConnectionItem):
         stroker.setWidth(5)
         shape = stroker.createStroke(self.path())
         return shape
-
-    def _on_selection_changed(self):
-        if self.isSelected():
-            self.setPen(self._selected_pen)
-        else:
-            self.setPen(self._pen)
 
     def mousePressEvent(self, event):
         self._moved = False
@@ -550,6 +543,14 @@ class ConnectionItem(nodz_main.ConnectionItem):
         self._moved = True
         super(ConnectionItem, self).mouseMoveEvent(event)
 
+    def paint(self, painter, *args):
+        self.updatePath()
+
+        if self._hovered or self.isSelected():
+            painter.setPen(self._selected_pen)
+        else:
+            painter.setPen(self._pen)
+        painter.drawPath(self.path())
 
 class Nodz(ConfiguationMixin, nodz_main.Nodz):
     """ extends the nodz_main.Nodz class
@@ -711,6 +712,19 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
         self.signal_nodes_deleted.emit([_ for _ in self.scene().selectedItems() if isinstance(_, NodeItem)])
         super(Nodz, self)._deleteSelectedNodes()
 
+    def _deleteSelectedNodes(self):
+        """ overrides original method
+
+        Let us emit a signal on nodes deletion
+        Returns:
+
+        """
+        for node in self.scene().selectedItems():
+            node._remove()
+
+        # Emit signal.
+        self.signal_nodes_deleted.emit([_ for _ in self.scene().selectedItems() if isinstance(_, NodeItem)])
+
     def retrieve_creation_position(self):
         """ retrieves the position where something should be created
 
@@ -757,7 +771,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
             self.signal_node_created.emit(node)
             return node
 
-    def createNode(self, name="default", preset="node_default", position=None, alternate=True):
+    def createNode(self, name="default", preset="node_default", position=None, alternate=False):
         """ overrides the createNode method
 
         Args:
@@ -1669,7 +1683,7 @@ class Nodegraph(Basegraph):
         pass
 
     def on_selection_changed(self, selection):
-        print "current selection", selection
+        pass
 
     def on_nodes_deleted(self, nodeitems_list):
         pass
