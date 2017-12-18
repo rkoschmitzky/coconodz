@@ -527,6 +527,7 @@ class ConnectionItem(nodz_main.ConnectionItem):
 
     def mousePressEvent(self, event):
         self._moved = False
+        self.scene().clearSelection()
         self.setSelected(True)
 
     def mouseReleaseEvent(self, event):
@@ -551,6 +552,7 @@ class ConnectionItem(nodz_main.ConnectionItem):
         else:
             painter.setPen(self._pen)
         painter.drawPath(self.path())
+
 
 class Nodz(ConfiguationMixin, nodz_main.Nodz):
     """ extends the nodz_main.Nodz class
