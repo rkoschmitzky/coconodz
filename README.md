@@ -79,7 +79,6 @@ Main Goals:
 | node_border                      | int    | default node border size
 | node_attr_height                 | int    | default attribute height
 | connection_width                 | int    | default connection pixel width
-| alternate_value                  | int    | alternates background color on attributes
 | grid_color                       | list   | color the canvas grid will use
 | slot_border                      | list   |
 | non_connectable_color            | list   | color the connection will use when attributes are not connectable, RGBA color list 0-255

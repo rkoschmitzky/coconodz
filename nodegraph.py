@@ -468,7 +468,6 @@ class ConnectionItem(nodz_main.ConnectionItem):
         self.title.setDefaultTextColor(nodz_utils._convertDataToColor(
                                        self.configuration.connection_text_color)
                                        )
-        #self.source.scene().selectionChanged.connect(self._on_selection_changed)
 
         self._moved = False
         self._hovered = False
@@ -764,7 +763,7 @@ class Nodz(ConfiguationMixin, nodz_main.Nodz):
             _ = "node_{0}".format(node_type)
             if hasattr(self.configuration, _):
                 # and create node with included preset
-                node = self.createNode(name, _, position, alternate)
+                node = self.createNode(name, _, position=position, alternate=alternate)
             else:
                 LOG.info("Node preset for type {0} not configured.".format(node_type))
                 node = self.createNode(name, position=position, alternate=alternate)
