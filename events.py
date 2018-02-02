@@ -1,26 +1,36 @@
 import logging
 
-from coconodz.lib import Singleton
+logging.basicConfig(level=logging.info)
+LOG = logging.getLogger(name="events")
 
-LOG = logging.getLogger(name="CocoNodz.events")
+
+class Singleton(object):
+    def __new__(type):
+        if not '_the_instance' in type.__dict__:
+            type._the_instance = object.__new__(type)
+        return type._the_instance
 
 
 class Events(Singleton):
-    """ class should help to keep custom eventhandling more organized and robust
+    """ A class that helps to keep custom eventhandling more organized and robust
 
-    The class will help to avoid double registrations of events and provides a simple
-    interface for event registration & deregistration; listing, pausing & resuming events.
-    It is application agnostic through usage of events adder/remover callables.
+    Notes:
+        Avoids double registrations of events and provides a simple interface
+        for event registration & deregistration
+        Pause mechanism to prevent events from running temporarily
+        Application agnostic through adder/remover callable.
+
     """
 
-    __data = {}
-    __paused = {}
+    __data = {}  # all event data
+    __paused = {}  # temporary event data storage for paused events
 
     @property
     def data(self):
         """ dictionary that holds the registered eventNames and their values
 
-        Returns: dictionary
+        Returns:
+            dict: current data
 
         """
         return self.__data
@@ -30,7 +40,7 @@ class Events(Singleton):
         """ setter of the dictionary that holds the registered event names and their values
 
         Args:
-            callbacks dictionary
+            callbacks (dict):
 
         Returns:
 
@@ -42,7 +52,8 @@ class Events(Singleton):
     def registered_events(self):
         """ all registered event names
 
-        Returns: list with event names
+        Returns:
+            list: event names
 
         """
         return self.data.keys()
@@ -52,21 +63,26 @@ class Events(Singleton):
         """ all paused events
 
         Returns:
+            list: event names of events that are in paused state
 
         """
         return [key for key, value in self.data.iteritems() if value["paused"]]
 
-
     def add_event(self, event_name, adder, owner=None, description="", remover=None, adder_args=(), adder_kwargs={}, remover_args=(), remover_kwargs={}):
-        """ base method to register an event
+        """ registers an event
 
         Args:
-            event_name: name identified for the event
-            adder: callable function or callable for the event
-            *adder_callable_args: arguments that will be passed to the callable
-            **adder_callable_kwargs: keyword arguments that will be passed to the callable
+            event_name (str): event name identified
+            adder (callable): caller responsible for callback addition
+            owner (str): event owner
+            description (str): event description
+            remover (callable): caller responsible
+            adder_args (tuple): arguments the adder needs
+            adder_kwargs (dict): keyword arguments the adder needs
+            remover_args (tuple): arguments the remover needs
+            remover_kwargs (dict): keyword arguments the remover needs
 
-        Returns: value, which should be a callback ID/hash
+        Returns:
 
         """
         if event_name in self.data:
@@ -74,8 +90,6 @@ class Events(Singleton):
             return
         else:
             # returning callback values have to be stored within a list
-            # the idea is not to create new objects when readding/resuming an event and just modify the existing object
-            # otherwise we wouldn't be able to update the returned value easily for a registered event
             try:
                 event_data = {"adder": adder,
                               "adder_args": adder_args,
@@ -88,28 +102,34 @@ class Events(Singleton):
                               "owner": owner,
                               "description": description
                               }
-
                 ids = adder(*adder_args, **adder_kwargs)
-
+                # keep the callers return value mutable
+                # this makes sense if we have to pause events, where a returned callback id will change
+                # and we have to update it
+                # the idea here is not to create new objects when readding/resuming an event
+                # and just modify the existing object, otherwise we wouldn't be able to update the returned value
+                # easily for a registered event
                 if not isinstance(ids, list):
                     event_data["id_list"] = [ids]
                 else:
                     event_data["id_list"] = ids
                 self.data[event_name] = event_data
                 LOG.info('Added event named %s' % event_name)
-
             except RuntimeError:
                 LOG.error('Failed to register callback.', exc_info=True)
 
-    def attach_remover(self, event_name, callable, callable_args=(), callable_kwargs={}):
-        """ adds a remover callable to an existing event
+    def attach_remover(self, event_name, caller, callable_args=(), callable_kwargs={}):
+        """ attaches a remover callable to an existing event
 
-        This can be useful if the remover will need access to the previous created event_data of the
-        registered event, like for example the id_list
+        Notes:
+            This can be useful or even required if the remover needs access to data that was returned by the adder
+            callable. When using add_event() the remover can't have access to that data when getting stored,
+            this is why a remover can be attached later.
+            The return value is stored inside the data attribute as "id_list".
 
         Args:
             event_name: registered event name
-            callable: callable that will be used to remove the event callback
+            caller: callable that will be used to remove the event callback
             callable_args: callable arguments tuple
             callable_kwargs: callabe keyword arguments dictionary
 
@@ -119,7 +139,7 @@ class Events(Singleton):
         assert event_name in self.registered_events, "No event named '{0}' registered".format(event_name)
 
         data = self.data.copy()
-        data[event_name]["remover"] = callable
+        data[event_name]["remover"] = caller
         data[event_name]["remover_args"] = callable_args
         data[event_name]["remover_kwargs"] = callable_kwargs
 
@@ -129,8 +149,8 @@ class Events(Singleton):
         """ base method to deregister an event
 
         Args:
-            event_name: registered event name
-            restore_on_fail: will restore an event in case it can't be removed (currently not implement)
+            event_name (str): registered event name identifier
+            restore_on_fail (bool): restores the given event if it can't ge removed (currently not implement)
 
         Returns:
 
@@ -169,7 +189,10 @@ class Events(Singleton):
             LOG.error("Not able to pause event '{0}'".format(event_name))
 
     def pause_events(self, exclude=[]):
-        """ pauses all events that aren't paused
+        """ pause all events
+
+        Args:
+            exclude (list): if set it will exclude given events from setting paused
 
         Returns:
 
@@ -182,7 +205,7 @@ class Events(Singleton):
         """ resumes a previous paused event
 
         Args:
-            event_name: registered event name
+            event_name (str): registered event name identified
 
         Returns:
 
@@ -195,9 +218,9 @@ class Events(Singleton):
 
             # execute callable and store the id in case the corresponding callback returns something
             # like a hash or object that will be needed to remove it later
-            id = adder(*args, **kwargs)
+            _id = adder(*args, **kwargs)
             self.data[event_name] = event_data
-            self._replace_id_list(event_name, [id])
+            self._replace_id_list(event_name, [_id])
             self._toggle_paused_state(event_name)
             LOG.info("Resumed event '{0}'".format(event_name))
 
@@ -212,10 +235,10 @@ class Events(Singleton):
                 self.resume_event(event_name)
 
     def _get_event_data(self, event_name):
-        """ get the subdict for a specific event
+        """ get the sub-dictionary for a specific event
 
         Args:
-            event_name: registered event name
+            event_name (str): registered event name identifier
 
         Returns:
 
@@ -275,8 +298,8 @@ class Events(Singleton):
 
         """
         event_data = self.data[event_name]
-        for id in event_data["id_list"]:
-            event_data["id_list"].remove(id)
+        for _id in event_data["id_list"]:
+            event_data["id_list"].remove(_id)
         for new_id in new_id_list:
             event_data["id_list"].append(new_id)
 
@@ -314,10 +337,16 @@ class Events(Singleton):
 class SuppressEvents(object):
     """ Decorator that allows to suppress given event
 
-    Call it like this @SuppressEvent("my_event")
-    It will pause the event, call the callable and resume the event.
-    """
+    It will prevent the given event from running, call the function and resumes the event.
+    Examples:
+        @SuppressEvent("my_event")
+        def do_something():
+            print("Do something")
 
+        @SuppressEvent("my_second_event")
+        def do_something_else():
+            print("Do something else")
+    """
     events = Events()
 
     def __init__(self, event_name_or_names):
