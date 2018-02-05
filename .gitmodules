@@ -1,0 +1,3 @@
+[submodule "site-packages/eventsmanager"]
+	path = site-packages/eventsmanager
+	url = https://github.com/rkoschmitzky/eventsmanager
