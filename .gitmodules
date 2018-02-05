@@ -4,3 +4,6 @@
 [submodule "site-packages/Qt.py"]
 	path = site-packages/Qt.py
 	url = https://github.com/rkoschmitzky/Qt.py
+[submodule "site-packages/Nodz"]
+	path = site-packages/Nodz
+	url = https://github.com/rkoschmitzky/Nodz
