@@ -64,7 +64,6 @@ class ConfigurationCase(TestCase):
         self.assertHasAttribute(Nodzgraph.configuration, "node_border")
         self.assertHasAttribute(Nodzgraph.configuration, "node_attr_height")
         self.assertHasAttribute(Nodzgraph.configuration, "connection_width")
-        self.assertHasAttribute(Nodzgraph.configuration, "alternate_value")
         self.assertHasAttribute(Nodzgraph.configuration, "grid_color")
         self.assertHasAttribute(Nodzgraph.configuration, "slot_border")
         self.assertHasAttribute(Nodzgraph.configuration, "non_connectable_color")

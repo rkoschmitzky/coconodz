@@ -13,9 +13,10 @@ from coconodz.lib import (BaseWindow,
                           AttributeContext,
                           Backdrop,
                           ConfiguationMixin)
-from coconodz.events import (Events,
-                             SuppressEvents
-                             )
+
+from coconodz import Manager as EventsManager
+from coconodz import SuppressEvents
+
 
 _COCONODZ_LOG = logging.getLogger(name="CocoNodz")
 LOG = logging.getLogger(name="CocoNodz.nodegraph")
@@ -1064,7 +1065,7 @@ class Nodegraph(Basegraph):
         # this can be overriden in subclasses to allow mixing in other classes
         # that are not host agnostic
         self._window = BaseWindow(parent)
-        self._events = Events()
+        self._events = EventsManager
 
         # create the graphingscene
         self._graph = Nodz(self._window)

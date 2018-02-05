@@ -23,6 +23,9 @@ except:
     pass
 
 import Qt as Qt
+from eventsmanager import (Manager,
+                           SuppressEvents
+                           )
 
 # check if we can have a for standalone execution QApplication
 try:

@@ -12,7 +12,7 @@ from coconodz.etc.maya import (applib,
                                callbacks,
                                decorators
                                )
-from coconodz.events import SuppressEvents
+from coconodz import SuppressEvents
 import coconodz.nodegraph as nodegraph
 from coconodz.lib import BaseWindow
 
@@ -88,7 +88,7 @@ class Nodzgraph(nodegraph.Nodegraph):
                                                   )
                                       )
                 self.events.attach_remover(event_name,
-                                           callable=callbacks.remove_callbacks_only,
+                                           caller=callbacks.remove_callbacks_only,
                                            callable_args=(self.events.data[event_name]["id_list"],
                                                           )
                                            )
