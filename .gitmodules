@@ -1,3 +1,6 @@
 [submodule "site-packages/eventsmanager"]
 	path = site-packages/eventsmanager
 	url = https://github.com/rkoschmitzky/eventsmanager
+[submodule "site-packages/Qt.py"]
+	path = site-packages/Qt.py
+	url = https://github.com/rkoschmitzky/Qt.py

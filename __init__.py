@@ -16,9 +16,11 @@ LOG.setLevel(logging.WARNING)
 
 from coconodz.version import version
 
-# appending Qt.py for CocoNodz
+# appending relevant submodule paths for CocoNodz
 try:
-    sys.path.append(os.path.join(__path__[0], "site-packages"))
+    _path = os.path.join(__path__[0], "site-packages")
+    sys.path.append(_path)
+    sys.path.append(os.path.join(_path, "Qt.py"))
 except:
     pass
 
