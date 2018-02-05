@@ -19,15 +19,17 @@ from coconodz.version import version
 # appending relevant submodule paths for CocoNodz
 try:
     _path = os.path.join(__path__[0], "site-packages")
-    sys.path.append(_path)
+    #sys.path.append(_path)
     sys.path.append(os.path.join(_path, "Qt.py"))
+    sys.path.append(os.path.join(_path, "eventsmanager"))
+    sys.path.append(os.path.join(_path, "Nodz"))
 except:
     pass
 
-import Qt as Qt
+import Qt
 from eventsmanager import (Manager,
-                           SuppressEvents
-                           )
+                           SuppressEvents)
+import nodz_main
 
 # check if we can have a for standalone execution QApplication
 try:

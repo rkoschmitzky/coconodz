@@ -27,7 +27,7 @@ from coconodz.version import version
 PLUGIN_NAME = PACKAGE_NAME
 PLUGIN_VERSION = "0.1.0"
 COCONODZ_VERSION = version
-COCONODZ_ICON = os.path.abspath(os.path.join(os.path.dirname(Qt.__file__), "..", "icons", "coconodz.png"))
+COCONODZ_ICON = os.path.abspath(os.path.join(os.path.dirname(Qt.__file__), "..", "..", "icons", "coconodz.png"))
 
 
 class MayaMenu(Menu):
